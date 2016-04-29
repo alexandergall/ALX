@@ -1,3 +1,10 @@
+## Build an instance of a ALX system from the ALX-branded nixpkgs tree
+## in the ./nixpkgs submodule.  This includes an install image and
+## configuration that can be used to install a system from scratch
+## with the installer provided by installer.nix and a shell script
+## that performs an upgrade of an existing ALX system to the new
+## version.
+
 { system ? "x86_64-linux" }:
 
 with import <nixpkgs> { inherit system; };
@@ -22,12 +29,11 @@ let
 
     };
   };
-  customConfig = ./installer-config.nix;
+  customConfig = ./install-image-config.nix;
 
   build = (import <nixpkgs/nixos/lib/eval-config.nix> {
     inherit system;
-    modules = [ installer/modules/installer-nfsroot.nix
-                installer/modules/install-image.nix
+    modules = [ installer/modules/install-image.nix
                 installImageConfig
               ] ++ (optional (pathExists customConfig) customConfig);
   }).config.system.build;
@@ -137,7 +143,6 @@ let
     '';
 
   jobs = rec {
-    installer = { inherit (build.nfsroot) nfsRootTarball bootLoader kernel; };
     installImage = build.installImage.tarball;
     installConfig = build.installImage.config;
     inherit upgradeCommand;
