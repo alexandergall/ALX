@@ -3,3 +3,4 @@
 result*
 installer-config.nix
 install-image-config.nix
+nixpkgs
