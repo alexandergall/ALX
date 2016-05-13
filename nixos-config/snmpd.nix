@@ -4,30 +4,39 @@ with lib;
 
 {
   services.snmpd = let
-    community  = "public";
-    sysUpTime = "sysUpTime";
-  in {
-    enable = true;
-    agentAddresses = [
-      { proto = "udp"; address = "127.0.0.1"; port = 161; }
-      { proto = "udp6"; address = "::1"; port = 161; }
-    ];
-    communities = {
-      ro = [
-        { inherit community; source = "127.0.0.1"; }
-        { community = "snabb"; source = "127.0.0.1"; view = sysUpTime; }
-      ];
-      ro6 = [
-        { inherit community; source = "::1"; }
-        { community = "snabb"; source = "::1"; view = sysUpTime; }
-      ];
+    listenOn = {
+      ipv4 = [ "127.0.0.1" ];
+      ipv6 = [ "::1" ];
+    };
+    roCommunities = {
+      public = {
+        sources4 = [ "127.0.0.1" ];
+        sources6 = [ "::1" ];
+      };
     };
 
-    ## The Snabb SNMP sub-agent uses community "snabb" to read
-    ## sysUpTime in order to be independent of the "public" community.
-    views.${sysUpTime} = {
-      type = "included";
-      oid = ".1.3.6.1.2.1.1.3";
+    mkAgentAddress = address: proto:
+      { inherit proto address; port = 161; };
+    mkAgentAddresses = addresses: proto:
+      map (address: mkAgentAddress address proto) addresses;
+    mkCommunity = attr: community: set:
+      let
+        sources = attrByPath [ attr ] null set;
+        view = attrByPath [ "view" ] null set;
+      in
+        if (sources != null) then
+          concatMap (source: singleton { inherit community source view; }) sources
+        else
+          null;
+    mkCommunities = attr: set:
+      remove null (flatten (mapAttrsToList (n: v: mkCommunity attr n v) set));
+  in {
+    enable = true;
+    agentAddresses = mkAgentAddresses listenOn.ipv4 "udp" ++
+                     mkAgentAddresses listenOn.ipv6 "udp6";
+    communities = {
+      ro = mkCommunities "sources4" roCommunities;
+      ro6 = mkCommunities "sources6" roCommunities;
     };
   };
 }
