@@ -13,6 +13,7 @@ with lib;
         sources4 = [ "127.0.0.1" ];
         sources6 = [ "::1" ];
       };
+    };
 
     mkAgentAddress = address: proto:
       { inherit proto address; port = 161; };
@@ -31,11 +32,11 @@ with lib;
       remove null (flatten (mapAttrsToList (n: v: mkCommunity attr n v) set));
   in {
     enable = true;
-      agentAddresses = mkAgentAddresses listenOn.ipv4 "udp" ++
-                       mkAgentAddresses listenOn.ipv6 "udp6";
-      communities = {
-        ro = mkCommunities "sources4" roCommunities;
-        ro6 = mkCommunities "sources6" roCommunities;
-      };
+    agentAddresses = mkAgentAddresses listenOn.ipv4 "udp" ++
+                     mkAgentAddresses listenOn.ipv6 "udp6";
+    communities = {
+      ro = mkCommunities "sources4" roCommunities;
+      ro6 = mkCommunities "sources6" roCommunities;
+    };
   };
 }
