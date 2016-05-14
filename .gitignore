@@ -2,7 +2,4 @@
 #~
 result*
 installer-config.nix
-<<<<<<< HEAD
 install-image-config.nix
-=======
->>>>>>> f0bef02... Track release-16.03.ALX in nixpkgs submodule
