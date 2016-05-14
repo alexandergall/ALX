@@ -276,7 +276,12 @@ into an ALX system as follows.
      ```
    * Merge `/etc/nixos` with the contents of the `nixos-config` directory of the
      ALX Git repository
-   * Proceed as for an [upgrade](#upgrading)
+   * Proceed as for an [upgrade](#upgrading). In this case, the upgrade command
+     will fail with an error saying that `nixpkgs not available, can't compare
+     versions.  Use -f to force installation`.  This is because
+     `nix-channel --remove nixos` has effctively removed the nixpkgs sources
+     from the standard search path (`NIX_PATH`).  Use `alx-upgrade -f` to
+     force the upgrade as instructed.
 
 ### <a name="installFromScratch"></a>From scratch
 
