@@ -63,11 +63,23 @@ let
         done
 
         echo "Attempting to upgrade the system from version $current to ${version}"
-        if [ $(nix-instantiate --eval -E "with (import <nixpkgs> {}).lib; versionOlder \"$current\" \"${version}\"") != "true" \
-             -a -z "$force" ]; then
-            echo "Target version is not newer than current version, use -f to " \
-                 "force installation"
-            exit 1
+        set +e
+        nix-instantiate --eval -E '<nixpkgs>' >/dev/null
+        have_nixpkgs=$?
+        set -e
+        if [ $have_nixpkgs -eq 0 ]; then
+            if [ $(nix-instantiate --eval -E "with (import <nixpkgs> {}).lib; versionOlder \"$current\" \"${version}\"") != "true" \
+                 -a -z "$force" ]; then
+                echo "Target version is not newer than current version, use -f to " \
+                     "force installation"
+                exit 1
+            fi
+        else
+            if [ -z "$force" ]; then
+                echo "nixpkgs not available, can't compare versions.  Use -f to force installation"
+                exit 1
+            fi
+
         fi
 
         set -- $(nix-channel --list | awk '$1 == "nixos" {print $2}')
