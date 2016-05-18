@@ -6,13 +6,11 @@ The Agile LAN eXtender - Providing Point-to-point and multi-point L2-VPNs on top
 This repository provides the framework to create and maintain a
 full-featured network appliance based on the [Snabb
 Switch](https://github.com/snabbco/snabb/blob/master/README.md)
-project.  The core code used by the appliance is currently maintained
-in the [`vpn`
-branch](https://github.com/alexandergall/snabbswitch/tree/vpn) of a
-fork of the main [Snabb Switch
-repository](https://github.com/snabbco/snabb).  Please refer to the
-documentation of the [`l2vpn` Snabb
-program](https://github.com/alexandergall/snabbswitch/blob/vpn/src/program/l2vpn/README.md)
+project.  The core code used by the appliance is maintained in the
+[`l2vpn` branch](https://github.com/snabbco/snabb/tree/l2vpn) of the
+main [Snabb repository](https://github.com/snabbco/snabb).  Please
+refer to the documentation of the [`l2vpn` Snabb
+program](https://github.com/snabbco/snabb/blob/l2vpn/src/program/l2vpn/README.md)
 for a detailed description of the service.
 
 The motivation for creating the `l2vpn` application in the first place
