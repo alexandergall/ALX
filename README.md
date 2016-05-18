@@ -666,14 +666,14 @@ addresses, e.g.
 The VPNs themselves are configured in the attribute set
 `programs.l2vpn.instances`.  The structure is almost the same as the
 [literal configuration in
-Lua](https://github.com/alexandergall/snabbswitch/tree/vpn/src/program/l2vpn#configuration).
+Lua](https://github.com/snabbco/snabb/blob/l2vpn/src/program/l2vpn/README.md#configuration).
 
 The full documentation of the NixOS options can be found in the
 description of the `snabbswitch` option in the `configuration.nix(5)`
 man page.
 
 The translation of the [point-to-point
-example](https://github.com/alexandergall/snabbswitch/tree/vpn/src/program/l2vpn#point-to-point-vpn)
+example](https://github.com/snabbco/snabb/blob/l2vpn/src/program/l2vpn/README.md#point-to-point-vpn)
 into the configuration of the `l2vpn.nix` module would look as follows
 
 Endpoint A:
