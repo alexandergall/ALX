@@ -168,6 +168,28 @@ one.
 Such a modified NixOS release could be called a "branded" NixOS
 release, though this nomenclature is not used by the NixOS community.
 
+## System requirements (TODO: be more specific)
+
+   * x86-64 architecture, recommended is an Intel Haswell CPU or newer
+     for applications requiring high packet rates (>500k pps)
+   * Currently only 10GE network adapters based on the Intel 82599 chip
+     are supported (support for 1GE NICs based on Intel
+     i210 and i350 will follow soon)
+   * UEFI firmware for installation via PXE
+
+## Restrictions
+
+Only IPv6 is supported as transport protocol for encapsulated Ethernet
+frames, i.e. IPv6 connectivity is required between the endpoints of
+any pseudowire.
+
+IPv6 fragmentation/reassembly is not supported.  The path-MTU between
+the endpoints of any pseudowire must be large enough to accomodate the
+original Ethernet frame (maximum 1514 bytes if no VLAN tags are used)
+plus the encapsulation overhead, which amounts to 66 bytes at the
+maximum (for the L2TPv3 and GRE encapsulations), including the 14-byte
+(outer) Ethernet header.
+
 ## Downloads
 
 The official releases of the ALX system built with default settings
