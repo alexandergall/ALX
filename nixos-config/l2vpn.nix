@@ -3,9 +3,8 @@
 with lib;
 
 {
-  services.snabbswitch = {
+  services.snabb = {
     enable = true;
-    pkg = pkgs.snabbswitchVPN;
     interfaces = [];
     programs.l2vpn.instances = {};
   };
