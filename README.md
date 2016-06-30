@@ -168,13 +168,21 @@ one.
 Such a modified NixOS release could be called a "branded" NixOS
 release, though this nomenclature is not used by the NixOS community.
 
-## System requirements (TODO: be more specific)
+## System requirements
 
    * x86-64 architecture, recommended is an Intel Haswell CPU or newer
      for applications requiring high packet rates (>500k pps)
-   * Currently only 10GE network adapters based on the Intel 82599 chip
-     are supported (support for 1GE NICs based on Intel
-     i210 and i350 will follow soon)
+   * The following NICs are supported
+     * 1GE
+       * Intel 350
+       * Intel 210
+     * 10GE
+       * Intel 82599 SFP
+       * Intel 82574L
+       * Intel 82571
+       * Intel 82599 T3
+       * Intel X540
+       * Intel X520
    * UEFI firmware for installation via PXE
 
 ## Restrictions
@@ -287,10 +295,12 @@ If the target system is already running NixOS, it can be transformed
 into an ALX system as follows.
 
    * Remove the existing `nixos` channel
+
      ```
      # nix-channel --remove nixos
      ```
    * Add the "branded" ALX `nixos` channel, e.g. for the `16.03.ALX` major release
+
      ```
      # nix-channel --add file:///ALX/channels/nixos-16.03.ALX nixos
      ```
@@ -470,7 +480,7 @@ The default `system.nix` contains the following options
   services.ntp.servers = [ "pool.ntp.org" ];
 
   environment.systemPackages = with pkgs; [
-     emacs24-nox config.services.snabbswitch.pkg exabgp
+     emacs24-nox config.services.snabb.pkg exabgp
   ];
 
 ```
@@ -669,9 +679,8 @@ This file contains the configuration of the actual L2VPN service.  By
 default, it is enabled but contains no VPNs
 
 ```
-  services.snabbswitch = {
+  services.snabb = {
     enable = true;
-    pkg = pkgs.snabbswitchVPN;
     interfaces = [];
     programs.l2vpn.instances = {};
   };
@@ -691,7 +700,7 @@ The VPNs themselves are configured in the attribute set
 Lua](https://github.com/snabbco/snabb/blob/l2vpn/src/program/l2vpn/README.md#configuration).
 
 The full documentation of the NixOS options can be found in the
-description of the `snabbswitch` option in the `configuration.nix(5)`
+description of the `snabb` option in the `configuration.nix(5)`
 man page.
 
 The translation of the [point-to-point
