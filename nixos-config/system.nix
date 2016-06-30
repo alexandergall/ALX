@@ -21,6 +21,6 @@ with lib;
   services.ntp.servers = [ "pool.ntp.org" ];
 
   environment.systemPackages = with pkgs; [
-     emacs24-nox config.services.snabbswitch.pkg exabgp
+     emacs24-nox config.services.snabb.pkg exabgp
   ];
 }
