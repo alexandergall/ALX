@@ -1,0 +1,40 @@
+Release Notes for ALX.9.9ae440d
+
+This release introduces support for the Intel 1GE NIC models i210 and
+i350.  The driver is selecetd by the following configuration in
+/etc/nixos/l2vpn.nix for an uplink interface or an attachment circuit:
+
+  driver = {
+    path = "apps.intel.intel1g";
+    name = "Intel1g";
+  };
+
+The default control-channel for pseudowires can now be disabled by
+specifying
+
+  defaultControlChannel = { enable = false; };
+
+in the configuration section of a VPLS instance.  Note that it is
+currently not possible to disable the control-channel for a particular
+pseudowire if the default control-channel is enabled.  To mix
+pseudowires with and without control-channels in a VPLS instance,
+disable the default control-channel as shown above and enable it
+specifically for the pseudowires for which it is desired.
+
+The release also contains the following bug-fixes
+
+  - l2vpn
+    Multiple VPLS instances now work as expected instead of
+    crashing the service
+
+  - SNMP subagents
+    The subagents are now started after the l2vpn application
+    to satisfy a dependency on the presence of the directory
+    where the shared memory segments where the application is
+    storing the SNMP objects for the agents.
+
+  - SNMP daemon
+    The daemon is now started after the "network" systemd target
+    to avoid spurious errors at boot time
+
+    
