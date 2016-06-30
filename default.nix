@@ -152,6 +152,7 @@ let
       cat ${selfExtractor} $out/payload.tar >$out/alx-upgrade
       chmod --reference=${selfExtractor} $out/alx-upgrade
       rm $out/${releaseName}.tar $out/upgrade $out/payload.tar
+      cp ${./release-notes.txt} $out/release-notes.txt
     '';
 
   jobs = rec {
