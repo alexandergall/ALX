@@ -1,40 +1,22 @@
-Release Notes for ALX.9.9ae440d
+Release Notes for ALX.16.e91790
 
-This release introduces support for the Intel 1GE NIC models i210 and
-i350.  The driver is selecetd by the following configuration in
-/etc/nixos/l2vpn.nix for an uplink interface or an attachment circuit:
+Note: this release includes changes to the configuration of
+/etc/nixos/l2vpn.nix that are incompatible with previous releases.
+The configuration needs to be adapted to the new version after an
+upgrade.
 
-  driver = {
-    path = "apps.intel.intel1g";
-    name = "Intel1g";
-  };
+The interface configurations have been separated from the VPLS
+configuration.  The configuration now includes L2-properties (MTU, MAC
+address, VLAN trunking) as well as L3-properties (address-family
+specific configuration, currently limited to IPv6).
 
-The default control-channel for pseudowires can now be disabled by
-specifying
+Any physical port can now optionally be configured as a VLAN trunk.
+In that case, sub-interfaces are created for each VLAN allowed on the
+trunk.  Each sub-interface can be configured either as a L2- or
+L3-port like a physical interface.
 
-  defaultControlChannel = { enable = false; };
+The VPLS configuration now includes just a reference to the name of a
+(sub-)interface for uplinks and attachment-circuits.
 
-in the configuration section of a VPLS instance.  Note that it is
-currently not possible to disable the control-channel for a particular
-pseudowire if the default control-channel is enabled.  To mix
-pseudowires with and without control-channels in a VPLS instance,
-disable the default control-channel as shown above and enable it
-specifically for the pseudowires for which it is desired.
-
-The release also contains the following bug-fixes
-
-  - l2vpn
-    Multiple VPLS instances now work as expected instead of
-    crashing the service
-
-  - SNMP subagents
-    The subagents are now started after the l2vpn application
-    to satisfy a dependency on the presence of the directory
-    where the shared memory segments where the application is
-    storing the SNMP objects for the agents.
-
-  - SNMP daemon
-    The daemon is now started after the "network" systemd target
-    to avoid spurious errors at boot time
-
-    
+It is now possible to disable the control-channel for a specific
+pseudowire when the default control-channel is disabled.
