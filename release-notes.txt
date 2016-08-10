@@ -1,4 +1,4 @@
-Release Notes for 15.09.ALX.17.b282d5c
+Release Notes for 15.09.ALX.18.cb882b5
 
 Note: this release includes changes to the configuration of
 /etc/nixos/l2vpn.nix that are incompatible with previous releases.
