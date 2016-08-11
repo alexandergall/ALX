@@ -1,4 +1,4 @@
-Release Notes for ALX.16.e91790
+Release Notes for ALX.18.bf878e3
 
 Note: this release includes changes to the configuration of
 /etc/nixos/l2vpn.nix that are incompatible with previous releases.
