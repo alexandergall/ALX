@@ -1,4 +1,4 @@
-Release Notes for 16.03.ALX.16.173dfc2
+Release Notes for 16.03.ALX.18.f5525c0
 
 Note: this release includes changes to the configuration of
 /etc/nixos/l2vpn.nix that are incompatible with previous releases.
