@@ -284,6 +284,13 @@ $ nix-build -A installImage -A installConfig
 The resulting files are used to [install a system from
 scratch](#installFromScratch).
 
+The Snabb-specific manpage describing the NixOS configuration options
+can be obtained by
+
+```
+$ nix-build module-manpage.nix -A snabb && man result/share/man/man5/configuration.nix.5
+```
+
 ## Bootstrapping
 
 There are a number of ways to get an initial installation deployed on
@@ -681,6 +688,9 @@ part of the man page for `configuration.nix(5)`.  An excerpt
 containing only the Snabb-specific options can be found in the section
 [Snabb NixOS Options](#nixos-options).
 
+The structure of the configuration is very similar to that of the the
+[`l2vpn` program](https://github.com/snabbco/snabb/blob/l2vpn-v4/src/program/l2vpn/README.md#configuration).
+
 By default, the Snabb service it is enabled but contains no interface
 or VPN definitions
 
@@ -692,94 +702,268 @@ or VPN definitions
   };
 ```
 
-The first step is to add the list of interfaces that are available for
-uplinks or attachment circuits to the `services.snabb.interfaces`
-list.  The list contains sets that contain the following attributes
+The configuration of interfaces differs significantly from that of the
+`l2vpn` program itself and is described in the following section.
 
-   * `name`: a string that contains the name that uniquely identifies
-     the interface in the system in the context of the L2VPN service.
+#### Device Selection and Interface configuration
 
-   * `pciAddress`: a string that contains the full PCI address of the interface
+The configuration of physical interfaces is logically split into two
+sections.  One section assigns a globally unique name to each physical
+interface and provides the specifics of its low-level configuration,
+i.e. the PCI address and Snabb driver selection.
 
-Please refer to the section about [naming vs
-addressing](https://github.com/snabbco/snabb/blob/l2vpn/src/program/l2vpn/README.md#naming-vs-addressing)
-of the L2VPN documentation for a detailed discussion about the naming
-of interfaces.
+The second section provides the high-level configuration of the
+interface, i.e. its properties at the link and network layers (L2/L3).
 
-For example
-
-```
-interfaces = [
-  { name = "TenGigE0/0";
-    pciAddress = "0000:03:00.0"; }
-  { name = "TenGigE0/1";
-    pciAddress = "0000:03:00.1"; }
-  { name = "GigE1";
-    pciAddress = "0000:06:00.0"; }
-];
-```
-
-This list only declares which interfaces are designated to be used by
-Snabb processes and provides a mapping to their PCI addresses.  If
-SNMP is enabled, it is also used to generate a persistent mapping of
-interfaces to values of the `ifIndex` object.  The configurations of
-the interfaces themselves is contained in the option
-`services.snabb.programs.l2vpn.interfaces`.  For example, based on the
-`interfaces` list above, the following provides the configuration of
-the interfaces associated with the PCI addresses `0000:03:00.1` and
-`0000:03:00.0`, respectively:
+Since the low-level configuration clearly depends on features of the
+hardware, it is convenient to structure it in such a manner that it
+can be easily tied to specific device configurations.  The Snabb NixOS
+module provides the `services.snabb.devices` option for precisely this
+purpose.  The option is a two-level attribute set, where the first
+level represents the name of a vendor and the second level a
+particular model for this vendor.  The model contains a description of
+all interfaces available on that particular device.  Consider the
+following example:
 
 ```
-programs.l2vpn.interfaces = [
-  {
-    name = "TenGigE0/1";
-    description = "uplink";
-    driver = {
-      path = "apps.intel.intel_app";
-      name = "Intel82599";
-      config = {
-        snmpEnable = true;
-      };
-    };
-    addressFamilies = {
-      ipv6 = {
-        address = "2001:db8:0:1::2";
-        nextHop = "2001:db8:0:1::1";
-      };
-    };
-  }
-    name = "TenGigE0/0";
-    description = "AC trunk";
-    driver = {
-      path = "apps.intel.intel_app";
-      name = "Intel82599";
-      config = {
-        snmpEnable = true;
-      };
-    };
-    trunk = {
-      enable = true;
-      encapsulation = "dot1q";
-      vlans = [
+{
+  advantech = {
+    FWA3230A = {
+      interfaces = [
         {
-          description = "AC1 on VLAN 100";
-          vid = 100;
+          name = "GigE1/0";
+          nicConfig = {
+            pciAddress = "0000:0c:00.0";
+            driver = {
+              path = "apps.intel.intel1g";
+              name = "Intel1g";
+            };
+          };
         }
         {
-          description = "AC1 on VLAN 200";
-          vid = 200;
+          name = "TenGigE1/1";
+          nicConfig = {
+            pciAddress = "0000:03:00.0";
+            driver = {
+              path = "apps.intel.intel_app";
+              name = "Intel82599";
+            };
+          };
         }
       ];
     };
-  }
-]
+  };
+}
 ```
 
-Interface `TenGigE0/1` is configured as a physical L3-port, while
-`TenGigE0/0` is configured as a L2 trunk-port with two sub-interfaces
-called `TenGigE0/0.100` and `TenGigE0/0.200` (the names are derived
+This defines a vendor named `advantech` with a single model called
+`FWA3230A`.  The device has two interfaces at PCI addresses
+`0000:0c:00.0` and `0000:03:00.0`, respectively, which need to be
+handled by the drivers specified by `path` and `name`.
+
+To select this model as the active model for a ALX instance, the
+following `enable` clause is added to the `services.snabb`
+configuration:
+
+```
+  services.snabb = {
+    enable = true;
+    devices.advantech.FWA3230A.enable = true;
+    interfaces = [];
+    programs.l2vpn.instances = {};
+  };
+```
+
+We can now proceed to add the high-level configurations of these
+interfaces, for example:
+
+```
+  services.snabb = {
+    enable = true;
+    devices.advantech.FWA3230A.enable = true;
+    interfaces = [
+      {
+        name = "TenGigE1/1";
+        description = "Uplink";
+        mtu = 9014;
+        addressFamilies = {
+          ipv6 = {
+            address = "2001:db8:0:1::2";
+            nextHop = "2001:db8:0:1::1";
+          };
+        };
+      }
+      {
+        name = "GigE1/0";
+        description = "Attachment Circuit VLAN trunk";
+        mtu = 1518;
+        trunk = {
+          enable = true;
+          encapsulation = "dot1q";
+          vlans = [
+            {
+              vid = 100;
+              description = "AC1";
+            }
+            {
+              vid = 200;
+              description = "AC2";
+            }
+          ];
+        };
+      }
+    ];
+    programs.l2vpn.instances = {};
+  };
+```
+
+The `name` here must match _exactly_ that of the definitions in the
+vendor/model section.
+
+Interface `TenGigE1/1` is configured as a physical L3-port, while
+`GigE1/0` is configured as a L2 trunk-port with two sub-interfaces
+called `GigE1/0.100` and `GigE1/0.200` (the names are derived
 automatically from the name of the underlying physical interface and
 the VLAN ID, joined by a dot) on VLANs 100 and and 200, respectively.
+
+It is convenient to store the devices list in a separate NixOS module.
+By convention, these modules are located in `/etc/nixos/devices`.  The
+standard `l2vpn.nix` module imports the pre-defined devices via the
+instruction
+
+```
+imports = [ ./devices ];
+```
+
+which includes the module `/etc/nixos/devices/default.nix`.  This
+module is just a wrapper around vendor-specific modules, which live in
+subdirectories of `/etc/nixos/devices`.
+
+A regular ALX distribution contains a set of pre-defined devices,
+which can be extended by the user.  Apart from the interface
+definitions, these modules may also be used to include arbitrary
+system configurations specific to that device.  For example, the
+`advantech` module `/etc/nixos/devices/advantech/default.nix` imports
+the module `FWA3230A.nix` (located in the same directory), which looks
+essentially like this:
+
+```
+{ config, pkgs, lib, ... }:
+
+with lib;
+
+let
+  cfg = config.services.snabb.devices.advantech;
+in
+{
+  config = mkIf cfg.FWA3230A.enable {
+    services.lcd4linux = {
+      enable = true;
+    };
+  };
+}
+```
+
+If the main configuration activates this model (via
+`services.snabb.devices.advantech.FWA3230A.enable = true`), the system
+service `lcd4linux` is enabled, which starts a daemon that enables the
+LCD display contained in the FWA3230A.  Any model-dependent
+customisations can be implemented in this manner.
+
+#### Immediate Driver Configuration
+
+It is possible specify the low-level configuration in the high-level
+section itself by adding the same `nicConfig` option that would appear
+in the vendor/model configuration.  This is called _immediate
+configuration_.  The following definition is exactly equivalent to the
+split configuration in the example above (note the absence of
+`devices.advantech.FWA3230A.enable = true`, which defaults to `false`)
+
+```
+  services.snabb = {
+    enable = true;
+    interfaces = [
+      {
+        name = "TenGigE1/1";
+        nicConfig = {
+          pciAddress = "0000:03:00.0";
+          driver = {
+            path = "apps.intel.intel_app";
+            name = "Intel82599";
+          };
+        };
+        description = "Uplink";
+        mtu = 9014;
+        addressFamilies = {
+          ipv6 = {
+            address = "2001:db8:0:1::2";
+            nextHop = "2001:db8:0:1::1";
+          };
+        };
+      }
+      {
+        name = "GigE1/0";
+        nicConfig = {
+          pciAddress = "0000:0c:00.0";
+          driver = {
+            path = "apps.intel.intel1g";
+            name = "Intel1g";
+          };
+        };
+        description = "Attachment Circuit VLAN trunk";
+        mtu = 1518;
+        trunk = {
+          enable = true;
+          encapsulation = "dot1q";
+          vlans = [
+            {
+              vid = 100;
+              description = "AC1";
+            }
+            {
+              vid = 200;
+              description = "AC2";
+            }
+          ];
+        };
+      }
+    ];
+    programs.l2vpn.instances = {};
+  };
+```
+
+In this case, no reference to the vendor/module configuration will be
+made.
+
+This method is particularly useful to define software interfaces.  For
+example, the following creates a Linux `tap` device (actually a `tun`
+device that provides the "wire" side of a `tuntap` device):
+
+```
+services.snabb = {
+  enable = true;
+  interfaces = [
+    rec {
+      name = "Tap1";
+      nicConfig = {
+        path = "apps.tap.tap";
+        name = "Tap";
+        literalConfig = ''${name}'';
+      };
+    }
+  ];
+}
+```
+
+For this to make sense, one needs to create the other side of the `tuntap` device, e.g.
+```
+# ip tuntap add Tap1 mode tap
+# ip link set up dev Tap1
+# ip link set address 01:02:03:04:05:06 dev Tap1
+# ip addr add 192.168.1.11/24 dev Tap1
+```
+
+#### VPN Instance Configuration
 
 The VPN instances are configured in the attribute set
 `services.snabb.programs.l2vpn.instances`.  The structure is basically
@@ -795,79 +979,53 @@ Endpoint A:
 ```
 services.snabb = {
   enable = true;
+  devices.advantech.FWA3320A.enable = true;
   interfaces = [
     {
       name = "TenGigE0/1";
-      pciAddress = "0000:04:00.1";
+      description = "uplink";
+      mtu = 9206;
+      addressFamilies = {
+        ipv6 = {
+          address = "2001:db8:0:C101:0:0:0:2";
+          nextHop = "2001:db8:0:C101:0:0:0:1";
+        };
+      };
     }
     {
       name = "TenGigE0/0";
-      pciAddress = "0000:04:00.0";
+      description = "AC";
+      mtu = 1514;
     }
   ];
 
-  programs.l2vpn = {
-    interfaces = [
-      {
-        name = "TenGigE0/1";
-        description = "uplink";
-        driver = {
-          path = "apps.intel.intel_app";
-          name = "Intel82599";
-          config = {
-            snmpEnable = true;
+  programs.l2vpn.instances = {
+    vpn1 = {
+      enable = true;
+      uplink = "TenGigE0/1";
+      vpls = {
+        myvpn = {
+          description = "Endpoint A of a point-to-point L2 VPN";
+          mtu = 1514;
+          vcID = 1;
+          address = "2001:db8:0:1:0:0:0:1";
+          attachmentCircuits = {
+            ac_A = "TenGigE0/0";
           };
-        };
-        mtu = 9206;
-        mac = "90:e2:ba:62:86:e5";
-        addressFamilies = {
-          ipv6 = {
-            address = "2001:db8:0:C101:0:0:0:2";
-            nextHop = "2001:db8:0:C101:0:0:0:1";
+          defaultTunnel = {
+            type = "l2tpv3";
+            config.l2tpv3 = { 
+              localCookie = "\\x00\\x11\\x22\\x33\\x44\\x55\\x66\\x77";
+              remoteCookie = "\\x77\\x66\\x55\\x44\\x33\\x33\\x11\\x00";
+            };
           };
-        };
-      }
-      {
-        name = "TenGigE0/0";
-        description = "AC";
-        driver = {
-          path = "apps.intel.intel_app";
-          name = "Intel82599";
-          config = {
-            snmpEnable = true;
+          defaultControlChannel = {
+            heartbeat = 2;
+            deadFactor = 4;
           };
-        };
-        mtu = 1514;
-      }
-    ];
-    instances = {
-      vpn1 = {
-        enable = true;
-        uplink = "TenGigE0/1";
-        vpls = {
-          myvpn = {
-            description = "Endpoint A of a point-to-point L2 VPN";
-            mtu = 1514;
-            vcID = 1;
-            address = "2001:db8:0:1:0:0:0:1";
-            attachmentCircuits = {
-              ac_A = "TenGigE0/0";
-            };
-            defaultTunnel = {
-              type = "l2tpv3";
-              config.l2tpv3 = { 
-                localCookie = "\\x00\\x11\\x22\\x33\\x44\\x55\\x66\\x77";
-                remoteCookie = "\\x77\\x66\\x55\\x44\\x33\\x33\\x11\\x00";
-              };
-            };
-            defaultControlChannel = {
-              heartbeat = 2;
-              deadFactor = 4;
-            };
-            pseudowires = {
-              pw_B = {
-                address = "2001:db8:0:1:0:0:0:2";
-              };
+          pseudowires = {
+            pw_B = {
+              address = "2001:db8:0:1:0:0:0:2";
             };
           };
         };
@@ -886,76 +1044,49 @@ services.snabb = {
   interfaces = [
     {
       name = "TenGigE0/1";
-      pciAddress = "0000:04:00.1";
+      description = "uplink";
+      mtu = 9206;
+      addressFamilies = {
+        ipv6 = {
+          address = "2001:db8:0:C102:0:0:0:2";
+          nextHop = "2001:db8:0:C102:0:0:0:1";
+        };
+      };
     }
     {
       name = "TenGigE0/0";
-      pciAddress = "0000:04:00.0";
+      description = "AC";
+      mtu = 1514;
     }
   ];
 
-  programs.l2vpn = {
-    interfaces = [
-      {
-        name = "TenGigE0/1";
-        description = "uplink";
-        driver = {
-          path = "apps.intel.intel_app";
-          name = "Intel82599";
-          config = {
-            snmpEnable = true;
+  programs.l2vpn.instances = {
+    vpn1 = {
+      enable = true;
+      uplink = "TenGigE0/1";
+      vpls = {
+        myvpn = {
+          description = "Endpoint B of a point-to-point L2 VPN";
+          mtu = 1514;
+          vcID = 1;
+          address = "2001:db8:0:1:0:0:0:2";
+          attachmentCircuits = {
+            ac_A = "TenGigE0/0";
           };
-        };
-        mtu = 9206;
-        mac = "90:e2:ba:62:86:e6";
-        addressFamilies = {
-          ipv6 = {
-            address = "2001:db8:0:C102:0:0:0:2";
-            nextHop = "2001:db8:0:C102:0:0:0:1";
+          defaultTunnel = {
+            type = "l2tpv3";
+            config.l2tpv3 = { 
+              localCookie = "\\x77\\x66\\x55\\x44\\x33\\x33\\x11\\x00";
+              remoteCookie = "\\x00\\x11\\x22\\x33\\x44\\x55\\x66\\x77";
+            };
           };
-        };
-      }
-      {
-        name = "TenGigE0/0";
-        description = "AC";
-        driver = {
-          path = "apps.intel.intel_app";
-          name = "Intel82599";
-          config = {
-            snmpEnable = true;
+          defaultControlChannel = {
+            heartbeat = 2;
+            deadFactor = 4;
           };
-        };
-        mtu = 1514;
-      }
-    ];
-    instances = {
-      vpn1 = {
-        enable = true;
-        uplink = "TenGigE0/1";
-        vpls = {
-          myvpn = {
-            description = "Endpoint B of a point-to-point L2 VPN";
-            mtu = 1514;
-            vcID = 1;
-            address = "2001:db8:0:1:0:0:0:2";
-            attachmentCircuits = {
-              ac_A = "TenGigE0/0";
-            };
-            defaultTunnel = {
-              type = "l2tpv3";
-              config.l2tpv3 = { 
-                localCookie = "\\x77\\x66\\x55\\x44\\x33\\x33\\x11\\x00";
-                remoteCookie = "\\x00\\x11\\x22\\x33\\x44\\x55\\x66\\x77";
-              };
-            };
-            defaultControlChannel = {
-              heartbeat = 2;
-              deadFactor = 4;
-            };
-            pseudowires = {
-              pw_A = {
-                address = "2001:db8:0:1:0:0:0:1";
-              };
+          pseudowires = {
+            pw_A = {
+              address = "2001:db8:0:1:0:0:0:1";
             };
           };
         };
@@ -984,6 +1115,134 @@ DESCRIPTION
 OPTIONS
        You can use the following options in configuration.nix.
 
+       services.snabb.devices
+           List of supported devices by vendor and model. The model
+           descriptions contain a list of physical interfaces which defines
+           their names and driver configurations. Exactly one vendor/model can
+           be designated to be the active device by setting its enable option
+           to true. The high-level interface configurations in
+           services.snabb.interfaces refer to these definitions by name.
+
+           Type: attribute set of attribute set of submoduless
+
+           Default:{ }
+
+           Example:
+
+               {
+                 advantech = {
+                   FWA3230A = {
+                     interfaces = {
+                       name = "GigE1/0";
+                       nicConfig = {
+                         pciAddress = "0000:0c:00.0";
+                         driver = {
+                           path = "apps.inten.intel1g";
+                           name = "Intel1g";
+                         };
+                       };
+                     };
+                   };
+                 };
+               }
+
+           Declared by:
+               <nixpkgs/nixos/modules/services/networking/snabb>
+
+       services.snabb.devices.<name>.<name>.enable
+           Whether to enable the vendor/model-specific configuration. Only one
+           vendor/model can be enabled.
+
+           Type: boolean
+
+           Default:false
+
+           Declared by:
+               <nixpkgs/nixos/modules/services/networking/snabb>
+
+       services.snabb.devices.<name>.<name>.interfaces
+           List of per-model interface definitions.
+
+           Type: list of submodules
+
+           Default:[ ]
+
+           Declared by:
+               <nixpkgs/nixos/modules/services/networking/snabb>
+
+       services.snabb.devices.<name>.<name>.interfaces.*.name
+           The name of the interface. All references to this interface must
+           use this name.
+
+           Type: string
+
+           Default:null
+
+           Example:"TenGigE0/0"
+
+           Declared by:
+               <nixpkgs/nixos/modules/services/networking/snabb>
+
+       services.snabb.devices.<name>.<name>.interfaces.*.nicConfig
+           The low-level configuration of the interface.
+
+           Type: null or submodule
+
+           Default:null
+
+           Declared by:
+               <nixpkgs/nixos/modules/services/networking/snabb>
+
+       services.snabb.devices.<name>.<name>.interfaces.*.nicConfig.driver.literalConfig
+           A literal Lua expression which will be passed to the constructor of
+           the driver module. If specified, it replaces the default
+           configuration which consists of the PCI address and MTU.
+
+           Type: null or string
+
+           Default:null
+
+           Example:
+
+               { pciaddr = "0000:01:00.0" }
+
+           Declared by:
+               <nixpkgs/nixos/modules/services/networking/snabb>
+
+       services.snabb.devices.<name>.<name>.interfaces.*.nicConfig.driver.name
+           The name of the driver within the module referenced by path.
+
+           Type: string
+
+           Example:"Intel82599"
+
+           Declared by:
+               <nixpkgs/nixos/modules/services/networking/snabb>
+
+       services.snabb.devices.<name>.<name>.interfaces.*.nicConfig.driver.path
+           The path of the Lua module in which the driver resides.
+
+           Type: string
+
+           Example:"apps.intel.intel_app"
+
+           Declared by:
+               <nixpkgs/nixos/modules/services/networking/snabb>
+
+       services.snabb.devices.<name>.<name>.interfaces.*.nicConfig.pciAddress
+           The PCI address of the interface in standard "geographical
+           notation" (<domain>:<bus>:<device>.<function>). This option is
+           ignored if literlConfig is specified.
+
+           Type: null or string
+
+           Default:null
+
+           Example:"0000:01:00.0"
+
+           Declared by:
+               <nixpkgs/nixos/modules/services/networking/snabb>
+
        services.snabb.enable
            Whether to enable the Snabb service. When disabled, no instance
            will be started. When enabled, individual instances can be enabled
@@ -1008,7 +1267,11 @@ OPTIONS
                <nixpkgs/nixos/modules/services/networking/snabb>
 
        services.snabb.interfaces
-           A list of interface definitions which map names to PCI devices.
+           A list of interface configurations. If the nicConfig option is not
+           present, then name must refer to an interface defined in the
+           vendor/model description referred to by the services.snabb.device
+           option. That definition must have a nicConfig attribute which will
+           be used for the low-level configuration of the interface.
 
            Type: list of submodules
 
@@ -1016,11 +1279,159 @@ OPTIONS
 
            Example:
 
-               [ { name = "TenGigE0/0";
-                   pciAddress = "0000:04:00.0"; }
-                 { name = "TenGigE0/1";
-                   pciAddress = "0000:04:00.1"; }
+               [ {
+                   name = "TenGigE0/0";
+                   description = "VPNTP uplink";
+                   mtu = 1514;
+                   addressFamilies = {
+                     ipv6 = {
+                       address = "2001:db8:0:1:0:0:0:2";
+                       nextHop = "2001:db8:0:1:0:0:0:1";
+                     };
+                   };
+                   trunk = { enable = false; };
+                 }
+                 {
+                   name = "TenGigE0/1";
+                   description = "VPNTP uplink";
+                   mtu = 9018;
+                   trunk = {
+                     enable = true;
+                     encapsulation = "dot1q";
+                     vlans = [
+                       {
+                         description = "AC";
+                         vid = 100;
+                       }
+                       {
+                         description = "VPNTP uplink#2";
+                         vid = 200;
+                         addressFamilies = {
+                           ipv6 = {
+                             address = "2001:db8:0:2:0:0:0:2";
+                             nextHop = "2001:db8:0:2:0:0:0:1";
+                           };
+                         };
+                       }
+                     ];
+                   };
+                 }
+                 { name = "Tap1";
+                   description = "AC";
+                   nicConfig = {
+                     driver = {
+                       path = "apps.tap.tap";
+                       name = "Tap";
+                       literalConfig = "Tap1";
+                     };
+                   };
+                   mtu = 1514;
+                 }
                ]
+
+           Declared by:
+               <nixpkgs/nixos/modules/services/networking/snabb>
+
+       services.snabb.interfaces.*.addressFamilies
+           An optional set of address family configurations. Providing this
+           option designates the physical interface as a L3 interface.
+           Currently, only ipv6 is supported. This option is only allowed if
+           trunking is disabled.
+
+           Type: null or submodule
+
+           Default:null
+
+           Declared by:
+               <nixpkgs/nixos/modules/services/networking/snabb>
+
+       services.snabb.interfaces.*.addressFamilies.ipv6
+           An optional IPv6 configuration of the subinterface.
+
+           Type: null or submodule
+
+           Default:null
+
+           Example:
+
+               {
+                 ipv6 = {
+                   address = "2001:db8:0:1::2";
+                   nextHop = "2001:db8:0:1::1";
+                 };
+               }
+
+           Declared by:
+               <nixpkgs/nixos/modules/services/networking/snabb>
+
+       services.snabb.interfaces.*.addressFamilies.ipv6.address
+           The IPv6 address assigned to the interface. A netmask of /64 is
+           implied.
+
+           Type: string
+
+           Declared by:
+               <nixpkgs/nixos/modules/services/networking/snabb>
+
+       services.snabb.interfaces.*.addressFamilies.ipv6.enableInboundND
+           If the nextHopMacAddress option is set, this option determines
+           whether neighbor solicitations for the local interface address are
+           processed. If disabled, the adjacent host must use a static
+           neighbor cache entry for the local IPv6 address in order to be able
+           to deliver packets destined for the interface. If nextHopMacAddress
+           is not set, this option is ignored.
+
+           Type: boolean
+
+           Default:true
+
+           Declared by:
+               <nixpkgs/nixos/modules/services/networking/snabb>
+
+       services.snabb.interfaces.*.addressFamilies.ipv6.nextHop
+           The IPv6 address used as next-hop for all packets sent outbound on
+           the interface. It must be part of the same subnet as the local
+           address.
+
+           Type: string
+
+           Declared by:
+               <nixpkgs/nixos/modules/services/networking/snabb>
+
+       services.snabb.interfaces.*.addressFamilies.ipv6.nextHopMacAddress
+           The optional MAC address that belongs to the nextHop address.
+           Setting this option disables dynamic neighbor discovery for the
+           nextHop address on the interface.
+
+           Type: null or string
+
+           Default:null
+
+           Declared by:
+               <nixpkgs/nixos/modules/services/networking/snabb>
+
+       services.snabb.interfaces.*.description
+           An optional verbose description of the interface. This string is
+           exposed in the ifAlias object if SNMP is enabled for the interface.
+
+           Type: null or string
+
+           Example:
+
+               10GE-SFP+ link to foo
+
+           Declared by:
+               <nixpkgs/nixos/modules/services/networking/snabb>
+
+       services.snabb.interfaces.*.mtu
+           The MTU of the interface in bytes, including the full Ethernet
+           header. In particular, if the interface is configured as VLAN
+           trunk, the 4 bytes attributed to the VLAN tag must be included in
+           the MTU.
+
+           Type: integer
+
+           Default:1514
 
            Declared by:
                <nixpkgs/nixos/modules/services/networking/snabb>
@@ -1046,13 +1457,212 @@ OPTIONS
            Declared by:
                <nixpkgs/nixos/modules/services/networking/snabb>
 
-       services.snabb.interfaces.*.pciAddress
-           The PCI address of the interface in standard "geographical
-           notation" (<domain>:<bus>:<device>.<function>)
+       services.snabb.interfaces.*.nicConfig
+           The low-level configuration of the interface.
+
+           Type: null or submodule
+
+           Default:null
+
+           Declared by:
+               <nixpkgs/nixos/modules/services/networking/snabb>
+
+       services.snabb.interfaces.*.nicConfig.driver.literalConfig
+           A literal Lua expression which will be passed to the constructor of
+           the driver module. If specified, it replaces the default
+           configuration which consists of the PCI address and MTU.
+
+           Type: null or string
+
+           Default:null
+
+           Example:
+
+               { pciaddr = "0000:01:00.0" }
+
+           Declared by:
+               <nixpkgs/nixos/modules/services/networking/snabb>
+
+       services.snabb.interfaces.*.nicConfig.driver.name
+           The name of the driver within the module referenced by path.
 
            Type: string
 
+           Example:"Intel82599"
+
+           Declared by:
+               <nixpkgs/nixos/modules/services/networking/snabb>
+
+       services.snabb.interfaces.*.nicConfig.driver.path
+           The path of the Lua module in which the driver resides.
+
+           Type: string
+
+           Example:"apps.intel.intel_app"
+
+           Declared by:
+               <nixpkgs/nixos/modules/services/networking/snabb>
+
+       services.snabb.interfaces.*.nicConfig.pciAddress
+           The PCI address of the interface in standard "geographical
+           notation" (<domain>:<bus>:<device>.<function>). This option is
+           ignored if literlConfig is specified.
+
+           Type: null or string
+
+           Default:null
+
            Example:"0000:01:00.0"
+
+           Declared by:
+               <nixpkgs/nixos/modules/services/networking/snabb>
+
+       services.snabb.interfaces.*.trunk.enable
+           Whether to configure the interface as a VLAN trunk.
+
+           Type: boolean
+
+           Default:false
+
+           Declared by:
+               <nixpkgs/nixos/modules/services/networking/snabb>
+
+       services.snabb.interfaces.*.trunk.encapsulation
+           The encapsulation used on the VLAN trunk (ignored if trunking is
+           disabled), either "dot1q" or "dot1ad" or an explicit ethertype. The
+           ethertypes for "dot1a" and "dot1ad" are set to 0x8100 and 0x88a8,
+           respectivley. An explicit ethertype must be specified as a string
+           to allow hexadecimal values. The value itself will be evaluated
+           when the configuration is processed by Lua.
+
+           Type: one of "dot1q", "dot1ad" or string
+
+           Default:"dot1q"
+
+           Example:"0x9100"
+
+           Declared by:
+               <nixpkgs/nixos/modules/services/networking/snabb>
+
+       services.snabb.interfaces.*.trunk.vlans
+           A list of vlan defintions.
+
+           Type: list of submodules
+
+           Default:[ ]
+
+           Example:
+
+               [ { description = "VLAN100";
+                   vid = 100; }
+                 { description = "VLAN200";
+                   vid = 200;
+                   addressFamilies = {
+                     ipv6 = {
+                       address = "2001:db8:0:1::2";
+                       nextHop = "2001:db8:0:1::1";
+                     };
+                   }; }
+                ]
+
+           Declared by:
+               <nixpkgs/nixos/modules/services/networking/snabb>
+
+       services.snabb.interfaces.*.trunk.vlans.*.addressFamilies
+           An optional set of address family configurations. Providing this
+           option designates the sub-interface as a L3 interface. Currently,
+           only ipv6 is supported.
+
+           Type: null or submodule
+
+           Default:null
+
+           Declared by:
+               <nixpkgs/nixos/modules/services/networking/snabb>
+
+       services.snabb.interfaces.*.trunk.vlans.*.addressFamilies.ipv6
+           An optional IPv6 configuration of the subinterface.
+
+           Type: null or submodule
+
+           Default:null
+
+           Example:
+
+               {
+                 ipv6 = {
+                   address = "2001:db8:0:1::2";
+                   nextHop = "2001:db8:0:1::1";
+                 };
+               }
+
+           Declared by:
+               <nixpkgs/nixos/modules/services/networking/snabb>
+
+       services.snabb.interfaces.*.trunk.vlans.*.addressFamilies.ipv6.address
+           The IPv6 address assigned to the interface. A netmask of /64 is
+           implied.
+
+           Type: string
+
+           Declared by:
+               <nixpkgs/nixos/modules/services/networking/snabb>
+
+       services.snabb.interfaces.*.trunk.vlans.*.addressFamilies.ipv6.enableInboundND
+           If the nextHopMacAddress option is set, this option determines
+           whether neighbor solicitations for the local interface address are
+           processed. If disabled, the adjacent host must use a static
+           neighbor cache entry for the local IPv6 address in order to be able
+           to deliver packets destined for the interface. If nextHopMacAddress
+           is not set, this option is ignored.
+
+           Type: boolean
+
+           Default:true
+
+           Declared by:
+               <nixpkgs/nixos/modules/services/networking/snabb>
+
+       services.snabb.interfaces.*.trunk.vlans.*.addressFamilies.ipv6.nextHop
+           The IPv6 address used as next-hop for all packets sent outbound on
+           the interface. It must be part of the same subnet as the local
+           address.
+
+           Type: string
+
+           Declared by:
+               <nixpkgs/nixos/modules/services/networking/snabb>
+
+       services.snabb.interfaces.*.trunk.vlans.*.addressFamilies.ipv6.nextHopMacAddress
+           The optional MAC address that belongs to the nextHop address.
+           Setting this option disables dynamic neighbor discovery for the
+           nextHop address on the interface.
+
+           Type: null or string
+
+           Default:null
+
+           Declared by:
+               <nixpkgs/nixos/modules/services/networking/snabb>
+
+       services.snabb.interfaces.*.trunk.vlans.*.description
+           A verbose description of the interface.
+
+           Type: string
+
+           Default:""
+
+           Declared by:
+               <nixpkgs/nixos/modules/services/networking/snabb>
+
+       services.snabb.interfaces.*.trunk.vlans.*.vid
+           The VLAN ID assigned to the subinterface in the range 0-4094. The
+           ID 0 designates the subinterfaces to which all untagged packets are
+           assigned.
+
+           Type: integer
+
+           Default:0
 
            Declared by:
                <nixpkgs/nixos/modules/services/networking/snabb>
@@ -1658,402 +2268,6 @@ OPTIONS
                <nixpkgs/nixos/modules/services/networking/snabb/programs/
                l2vpn>
 
-       services.snabb.programs.l2vpn.interfaces
-           A list of interface definitions.
-
-           Type: list of submodules
-
-           Default:[ ]
-
-           Example:
-
-               [ {
-                   name = "TenGigE0/0";
-                   description = "VPNTP uplink";
-                   driver = {
-                     path = "apps.intel.intel_app";
-                     name = "Intel82599";
-                   };
-                   addressFamilies = {
-                     ipv6 = {
-                       address = "2001:db8:0:1:0:0:0:2";
-                       nextHop = "2001:db8:0:1:0:0:0:1";
-                     };
-                   };
-                   trunk = { enable = false; };
-                 }
-                 {
-                   name = "TenGigE0/1";
-                   description = "VPNTP uplink";
-                   driver = {
-                     path = "apps.intel.intel_app";
-                     name = "Intel82599";
-                   };
-                   trunk = {
-                     enable = true;
-                     encapsulation = "dot1q";
-                     vlans = [
-                       {
-                         description = "AC";
-                         vid = 100;
-                       }
-                       {
-                         description = "VPNTP uplink#2";
-                         vid = 200;
-                         addressFamilies = {
-                           ipv6 = {
-                             address = "2001:db8:0:2:0:0:0:2";
-                             nextHop = "2001:db8:0:2:0:0:0:1";
-                           };
-                         };
-                       }
-                     ];
-                   };
-                 }
-               ]
-
-           Declared by:
-               <nixpkgs/nixos/modules/services/networking/snabb/programs/
-               l2vpn>
-
-       services.snabb.programs.l2vpn.interfaces.*.addressFamilies
-           An optional set of address family configurations. Providing this
-           option designates the physical interface as a L3 interface.
-           Currently, only ipv6 is supported. This option is only allowed if
-           trunking is disabled.
-
-           Type: null or submodule
-
-           Default:null
-
-           Declared by:
-               <nixpkgs/nixos/modules/services/networking/snabb/programs/
-               l2vpn>
-
-       services.snabb.programs.l2vpn.interfaces.*.addressFamilies.ipv6
-           An optional IPv6 configuration of the subinterface.
-
-           Type: null or submodule
-
-           Default:null
-
-           Example:
-
-               {
-                 ipv6 = {
-                   address = "2001:db8:0:1::2";
-                   nextHop = "2001:db8:0:1::1";
-                 };
-               }
-
-           Declared by:
-               <nixpkgs/nixos/modules/services/networking/snabb/programs/
-               l2vpn>
-
-       services.snabb.programs.l2vpn.interfaces.*.addressFamilies.ipv6.address
-           The IPv6 address assigned to the interface. A netmask of /64 is
-           implied.
-
-           Type: string
-
-           Declared by:
-               <nixpkgs/nixos/modules/services/networking/snabb/programs/
-               l2vpn>
-
-       services.snabb.programs.l2vpn.interfaces.*.addressFamilies.ipv6.enableInboundND
-           If the nextHopMacAddress option is set, this option determines
-           whether neighbor solicitations for the local interface address are
-           processed. If disabled, the adjacent host must use a static
-           neighbor cache entry for the local IPv6 address in order to be able
-           to deliver packets destined for the interface. If nextHopMacAddress
-           is not set, this option is ignored.
-
-           Type: boolean
-
-           Default:true
-
-           Declared by:
-               <nixpkgs/nixos/modules/services/networking/snabb/programs/
-               l2vpn>
-
-       services.snabb.programs.l2vpn.interfaces.*.addressFamilies.ipv6.nextHop
-           The IPv6 address used as next-hop for all packets sent outbound on
-           the interface. It must be part of the same subnet as the local
-           address.
-
-           Type: string
-
-           Declared by:
-               <nixpkgs/nixos/modules/services/networking/snabb/programs/
-               l2vpn>
-
-       services.snabb.programs.l2vpn.interfaces.*.addressFamilies.ipv6.nextHopMacAddress
-           The optional MAC address that belongs to the nextHop address.
-           Setting this option disables dynamic neighbor discovery for the
-           nextHop address on the interface.
-
-           Type: null or string
-
-           Default:null
-
-           Declared by:
-               <nixpkgs/nixos/modules/services/networking/snabb/programs/
-               l2vpn>
-
-       services.snabb.programs.l2vpn.interfaces.*.description
-           An optional verbose description of the interface. This string is
-           exposed in the ifAlias object if SNMP is enabled for the interface.
-
-           Type: null or string
-
-           Example:
-
-               10GE-SFP+ link to foo
-
-           Declared by:
-               <nixpkgs/nixos/modules/services/networking/snabb/programs/
-               l2vpn>
-
-       services.snabb.programs.l2vpn.interfaces.*.driver.config.snmpEnable
-           Whether to enable SNMP support in the driver.
-
-           Type: boolean
-
-           Default:false
-
-           Declared by:
-               <nixpkgs/nixos/modules/services/networking/snabb/programs/
-               l2vpn>
-
-       services.snabb.programs.l2vpn.interfaces.*.driver.name
-           The name of the driver within the module referenced by path.
-
-           Type: string
-
-           Example:"Intel82599"
-
-           Declared by:
-               <nixpkgs/nixos/modules/services/networking/snabb/programs/
-               l2vpn>
-
-       services.snabb.programs.l2vpn.interfaces.*.driver.path
-           The path of the Lua module in which the driver resides.
-
-           Type: string
-
-           Example:"apps.intel.intel_app"
-
-           Declared by:
-               <nixpkgs/nixos/modules/services/networking/snabb/programs/
-               l2vpn>
-
-       services.snabb.programs.l2vpn.interfaces.*.macAddress
-           The physical MAC address of the interface. This is currently
-           required if L3 subinterfaces are present (it should be
-           automatically read from the NIC).
-
-           Type: null or string
-
-           Default:null
-
-           Example:"00:00:00:01:02:03"
-
-           Declared by:
-               <nixpkgs/nixos/modules/services/networking/snabb/programs/
-               l2vpn>
-
-       services.snabb.programs.l2vpn.interfaces.*.mtu
-           The MTU of the interface in bytes, including the full Ethernet
-           header. In particular, if the interface is configured as VLAN
-           trunk, the 4 bytes attributed to the VLAN tag must be included in
-           the MTU.
-
-           Type: integer
-
-           Default:1514
-
-           Declared by:
-               <nixpkgs/nixos/modules/services/networking/snabb/programs/
-               l2vpn>
-
-       services.snabb.programs.l2vpn.interfaces.*.name
-           The system-wide unique name of the interface. It must exist in the
-           global list of inerfaces in the services.snabb.interfaces option,
-           where the PCI address associated with the device is stored. This
-           name is stored in the ifDescr and ifName SNMP objects if SNMP is
-           enabled for the interface.
-
-           Type: string
-
-           Default:null
-
-           Example:"TenGigE0/0"
-
-           Declared by:
-               <nixpkgs/nixos/modules/services/networking/snabb/programs/
-               l2vpn>
-
-       services.snabb.programs.l2vpn.interfaces.*.trunk.enable
-           Whether to configure the interface as a VLAN trunk.
-
-           Type: boolean
-
-           Default:false
-
-           Declared by:
-               <nixpkgs/nixos/modules/services/networking/snabb/programs/
-               l2vpn>
-
-       services.snabb.programs.l2vpn.interfaces.*.trunk.encapsulation
-           The encapsulation used on the VLAN trunk (ignored if trunking is
-           disabled), either "dot1q" or "dot1ad" or an explicit ethertype. The
-           ethertypes for "dot1a" and "dot1ad" are set to 0x8100 and 0x88a8,
-           respectivley. An explicit ethertype must be specified as a string
-           to allow hexadecimal values. The value itself will be evaluated
-           when the configuration is processed by Lua.
-
-           Type: one of "dot1q", "dot1ad" or string
-
-           Default:"dot1q"
-
-           Example:"0x9100"
-
-           Declared by:
-               <nixpkgs/nixos/modules/services/networking/snabb/programs/
-               l2vpn>
-
-       services.snabb.programs.l2vpn.interfaces.*.trunk.vlans
-           A list of vlan defintions.
-
-           Type: list of submodules
-
-           Default:[ ]
-
-           Example:
-
-               [ { description = "VLAN100";
-                   vid = 100; }
-                 { description = "VLAN200";
-                   vid = 200;
-                   addressFamilies = {
-                     ipv6 = {
-                       address = "2001:db8:0:1::2";
-                       nextHop = "2001:db8:0:1::1";
-                     };
-                   }; }
-                ]
-
-           Declared by:
-               <nixpkgs/nixos/modules/services/networking/snabb/programs/
-               l2vpn>
-
-       services.snabb.programs.l2vpn.interfaces.*.trunk.vlans.*.addressFamilies
-           An optional set of address family configurations. Providing this
-           option designates the sub-interface as a L3 interface. Currently,
-           only ipv6 is supported.
-
-           Type: null or submodule
-
-           Default:null
-
-           Declared by:
-               <nixpkgs/nixos/modules/services/networking/snabb/programs/
-               l2vpn>
-
-       services.snabb.programs.l2vpn.interfaces.*.trunk.vlans.*.addressFamilies.ipv6
-           An optional IPv6 configuration of the subinterface.
-
-           Type: null or submodule
-
-           Default:null
-
-           Example:
-
-               {
-                 ipv6 = {
-                   address = "2001:db8:0:1::2";
-                   nextHop = "2001:db8:0:1::1";
-                 };
-               }
-
-           Declared by:
-               <nixpkgs/nixos/modules/services/networking/snabb/programs/
-               l2vpn>
-
-       services.snabb.programs.l2vpn.interfaces.*.trunk.vlans.*.addressFamilies.ipv6.address
-           The IPv6 address assigned to the interface. A netmask of /64 is
-           implied.
-
-           Type: string
-
-           Declared by:
-               <nixpkgs/nixos/modules/services/networking/snabb/programs/
-               l2vpn>
-
-       services.snabb.programs.l2vpn.interfaces.*.trunk.vlans.*.addressFamilies.ipv6.enableInboundND
-           If the nextHopMacAddress option is set, this option determines
-           whether neighbor solicitations for the local interface address are
-           processed. If disabled, the adjacent host must use a static
-           neighbor cache entry for the local IPv6 address in order to be able
-           to deliver packets destined for the interface. If nextHopMacAddress
-           is not set, this option is ignored.
-
-           Type: boolean
-
-           Default:true
-
-           Declared by:
-               <nixpkgs/nixos/modules/services/networking/snabb/programs/
-               l2vpn>
-
-       services.snabb.programs.l2vpn.interfaces.*.trunk.vlans.*.addressFamilies.ipv6.nextHop
-           The IPv6 address used as next-hop for all packets sent outbound on
-           the interface. It must be part of the same subnet as the local
-           address.
-
-           Type: string
-
-           Declared by:
-               <nixpkgs/nixos/modules/services/networking/snabb/programs/
-               l2vpn>
-
-       services.snabb.programs.l2vpn.interfaces.*.trunk.vlans.*.addressFamilies.ipv6.nextHopMacAddress
-           The optional MAC address that belongs to the nextHop address.
-           Setting this option disables dynamic neighbor discovery for the
-           nextHop address on the interface.
-
-           Type: null or string
-
-           Default:null
-
-           Declared by:
-               <nixpkgs/nixos/modules/services/networking/snabb/programs/
-               l2vpn>
-
-       services.snabb.programs.l2vpn.interfaces.*.trunk.vlans.*.description
-           A verbose description of the interface.
-
-           Type: string
-
-           Default:""
-
-           Declared by:
-               <nixpkgs/nixos/modules/services/networking/snabb/programs/
-               l2vpn>
-
-       services.snabb.programs.l2vpn.interfaces.*.trunk.vlans.*.vid
-           The VLAN ID assigned to the subinterface in the range 0-4094. The
-           ID 0 designates the subinterfaces to which all untagged packets are
-           assigned.
-
-           Type: integer
-
-           Default:0
-
-           Declared by:
-               <nixpkgs/nixos/modules/services/networking/snabb/programs/
-               l2vpn>
-
        services.snabb.programs.l2vpn.programOptions
            Default command-line options to pass to each service instance. If
            not specified, the global default options are applied.
@@ -2081,6 +2295,29 @@ OPTIONS
            Example:
 
                "/var/run/snabb"
+
+           Declared by:
+               <nixpkgs/nixos/modules/services/networking/snabb>
+
+       services.snabb.snmp.enable
+           Whether to enable SNMP for interfaces. Currently, SNMP is enabled
+           unconditionally for pseudowires.
+
+           Type: boolean
+
+           Default:false
+
+           Declared by:
+               <nixpkgs/nixos/modules/services/networking/snabb>
+
+       services.snabb.snmp.interval
+           The interval in seconds in which the SNMP objects exported via
+           shared memory segments to the SNMP sub-agents are synchronized with
+           the underlying data sources such as interface counters.
+
+           Type: integer
+
+           Default:5
 
            Declared by:
                <nixpkgs/nixos/modules/services/networking/snabb>
@@ -2121,6 +2358,5 @@ COPYRIGHT
 
 
 
-NixOS                             08/10/2016              CONFIGURATION.NIX(5)
-
+NixOS                             08/19/2016              CONFIGURATION.NIX(5)
 ```
