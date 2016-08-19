@@ -3,6 +3,8 @@
 with lib;
 
 {
+  imports = [ ./devices ];
+
   services.snabb = {
     enable = true;
     interfaces = [];
