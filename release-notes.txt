@@ -1,22 +1,16 @@
-Release Notes for 16.03.ALX.18.f5525c0
+Release Notes for 16.03.ALX.22.90a10a7
 
 Note: this release includes changes to the configuration of
 /etc/nixos/l2vpn.nix that are incompatible with previous releases.
 The configuration needs to be adapted to the new version after an
-upgrade.
+upgrade.  Make sure that /etc/nixos/l2vpn.nix contains
 
-The interface configurations have been separated from the VPLS
-configuration.  The configuration now includes L2-properties (MTU, MAC
-address, VLAN trunking) as well as L3-properties (address-family
-specific configuration, currently limited to IPv6).
+  imports = [ ./devices ];
 
-Any physical port can now optionally be configured as a VLAN trunk.
-In that case, sub-interfaces are created for each VLAN allowed on the
-trunk.  Each sub-interface can be configured either as a L2- or
-L3-port like a physical interface.
+and copy the directory /etc/nixos/devices from nixos-config/devices of
+the ALX source distribution.
 
-The VPLS configuration now includes just a reference to the name of a
-(sub-)interface for uplinks and attachment-circuits.
-
-It is now possible to disable the control-channel for a specific
-pseudowire when the default control-channel is disabled.
+The interface configuration has been split into a low-level,
+device-specific part and a high-level part.  The low-level part is
+organized by vendor/module.  Please see the README.md, section
+l2vpn.nix for details.
