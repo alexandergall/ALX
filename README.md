@@ -567,10 +567,21 @@ could use
 See the section about the `networking` configuration option in the
 `configuration.nix(5)` man page for details.
 
-### `snmpd.nix`
+### <a name="snmpd.nix">`snmpd.nix`</a>
 
 This file contains the configuration of the SNMP daemon from the
-`net-snmp` package.  The relevant section is this:
+`net-snmp` package.  The default `snmpd.nix` enables the SNMP daemon
+by setting
+
+```
+services.snmpd.enable = true;
+```
+
+If this option is set to `false`, neither the SNMP daemon itself nor
+any of the sub-agents will be started.
+
+If enabled, the relevant section for the configuration is the
+following:
 
 ```
     listenOn = {
@@ -963,6 +974,37 @@ For this to make sense, one needs to create the other side of the `tuntap` devic
 # ip addr add 192.168.1.11/24 dev Tap1
 ```
 
+#### SNMP
+
+For SNMP to be available in general, the SNMP daemon must be enabled
+as described in the section about the [`snmpd.nix`](#snmpd.nix)
+configuration file.
+
+If the daemon is enabled, the `l2vpn` program unconditionally provides
+the [SNMP MIBs for the
+pseudowires](https://github.com/snabbco/snabb/blob/l2vpn/src/program/l2vpn/README.md#snmp)
+by starting the corresponding SNMP sub-agent as a `systemd` service
+called `pseudowire-snmp-subagent.service`.
+
+Support for interface-related MIBs must be enabled separately by setting
+
+```
+services.snabb.snmp.enable = true;
+```
+
+This will start an SNMP sub-agent which will provide the data for the
+`ifTable` and `ifXTable` SNMP tables through a `systemd` service
+called `interface-snmp-subagent.service`.
+
+The `l2vpn` program interacts with the sub-agent through a set of
+shared memory segments, which is located by default in the directory
+`/var/lib/snabb/shmem`.  This location can be changed through the
+option `services.snabb.shmemDir`, e.g.
+
+```
+services.snabb.shmemDir = "/tmp";
+```
+
 #### VPN Instance Configuration
 
 The VPN instances are configured in the attribute set
@@ -979,6 +1021,7 @@ Endpoint A:
 ```
 services.snabb = {
   enable = true;
+  snmp.enable = true;
   devices.advantech.FWA3320A.enable = true;
   interfaces = [
     {
@@ -1041,6 +1084,7 @@ Endpoint B:
 ```
 services.snabb = {
   enable = true;
+  snmp.enable = true;
   interfaces = [
     {
       name = "TenGigE0/1";
