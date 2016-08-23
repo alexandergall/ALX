@@ -947,8 +947,7 @@ In this case, no reference to the vendor/module configuration will be
 made.
 
 This method is particularly useful to define software interfaces.  For
-example, the following creates a Linux `tap` device (actually a `tun`
-device that provides the "wire" side of a `tuntap` device):
+example, the following connects to a Linux `tap` device:
 
 ```
 services.snabb = {
@@ -959,20 +958,36 @@ services.snabb = {
       nicConfig = {
         path = "apps.tap.tap";
         name = "Tap";
-        literalConfig = ''${name}'';
+        literalConfig = ''
+          { name = "${name}",
+            mtu2 = ${toString (if trunk.enable then
+                                  sub mtu 18
+                               else
+                                  sub mtu 14)} }
+
+         '';
       };
+      mtu = 1514;
+      trunk.enable = false;
     }
   ];
 }
 ```
 
-For this to make sense, one needs to create the other side of the `tuntap` device, e.g.
+For this to make sense, one needs to create the tap device first, e.g.
 ```
 # ip tuntap add Tap1 mode tap
 # ip link set up dev Tap1
 # ip link set address 01:02:03:04:05:06 dev Tap1
 # ip addr add 192.168.1.11/24 dev Tap1
 ```
+
+The `mtu2` option is special for the `app.tap.tap` because the Linux
+kernel does not include the Ethernet header in the MTU but the `l2vpn`
+program does.  The system automatically provides the MTU configured
+with the `mtu` option (1514 in this case) to the driver, but the
+driver doesn't know the actual Ethernet overhead (there could be a
+VLAN on top of it), so it needs to be told what the effective MTU us.
 
 #### SNMP
 
@@ -1140,6 +1155,108 @@ services.snabb = {
 };
 
 ```
+
+## Hacking
+
+### `l2vpn` Program
+
+To run a modified version of the `l2vpn` application, you can replace
+the standard version provided by the system as follows.
+
+First, create a local copy of the Snabb repository, e.g.
+
+```
+$  pwd
+/home/gall
+$ git clone https://github.com/snabbco/snabb
+Cloning into 'snabb'...
+remote: Counting objects: 19556, done.
+remote: Compressing objects: 100% (21/21), done.
+remote: Total 19556 (delta 7), reused 0 (delta 0), pack-reused 19535
+Receiving objects: 100% (19556/19556), 7.23 MiB | 3.59 MiB/s, done.
+Resolving deltas: 100% (12986/12986), done.
+Checking connectivity... done.
+$ cd snabb
+$ git checkout l2vpn
+Branch l2vpn set up to track remote branch l2vpn from origin.
+Switched to a new branch 'l2vpn'
+```
+
+Then create an override of the standard package by adding the Nix
+expression (replacing `src` with your actual path, of course)
+
+```
+  nixpkgs.config.packageOverrides = pkgs: rec {
+   snabbL2VPN = pkgs.snabbL2VPN.overrideDerivation (oldAttrs: {
+     src = /home/gall/snabb;
+   });
+  };
+```
+
+to the configuration in `/etc/nixos`, for example in `/etc/nixos/l2vpn.nix`:
+
+```
+{ config, pkgs, lib, ... }:
+
+with lib;
+
+{
+
+  nixpkgs.config.packageOverrides = pkgs: rec {
+   snabbL2VPN = pkgs.snabbL2VPN.overrideDerivation (oldAttrs: {
+     src = /home/gall/projects/snabbswitch;
+   });
+  };
+
+  imports = [ ./devices ];
+  .
+  .
+  .
+}
+```
+
+Now hack away.  When done, make sure that the source directory is
+clean (`make clean`), then execute `nixos-rebuild test`.  This will
+generate a system configuration that uses your local copy as the
+source of the `l2vpn` program.
+
+### `nixpkgs`
+
+If you want to hack on the Nix channel, which contains the full source
+of the `nixpkgs` system customised for ALX, clone into the `nixpkgs`
+repository and check out one of the release branches (typically the
+same branch your system is running on)
+
+```
+$ pwd
+/home/gall
+$ git clone https://github.com/alexandergall/nixpkgs
+Cloning into 'nixpkgs'...
+remote: Counting objects: 677620, done.
+remote: Compressing objects: 100% (17/17), done.
+remote: Total 677620 (delta 3), reused 0 (delta 0), pack-reused 677603
+Receiving objects: 100% (677620/677620), 264.30 MiB | 7.26 MiB/s, done.
+Resolving deltas: 100% (443492/443492), done.
+Checking connectivity... done.
+$ cd nixpkgs/
+$ git checkout release-16.03.ALX
+Branch release-16.03.ALX set up to track remote branch release-16.03.ALX from origin.
+Switched to a new branch 'release-16.03.ALX'
+
+```
+
+Now hack away.  When done, you need to tell the system that it should
+use this repository as the location of the system's Nix expression
+instead of the regular `nixos` channel.  You can do this by overriding
+the `NIX_PATH` environment variable (the path needs to point to a
+directory which contains the `nixpkgs` subdirectory):
+
+```
+NIX_PATH=/home/gall:nixos-config=/etc/nixos/configuration.nix nixos-rebuild test
+```
+
+This needs to be done whenver you need to create a new system
+configuration based on the local copy.
 
 ## <a name="nixos-options">Snabb NixOS Options</a>
 ```
@@ -1459,6 +1576,8 @@ OPTIONS
            exposed in the ifAlias object if SNMP is enabled for the interface.
 
            Type: null or string
+
+           Default:null
 
            Example:
 
@@ -2402,5 +2521,5 @@ COPYRIGHT
 
 
 
-NixOS                             08/19/2016              CONFIGURATION.NIX(5)
+NixOS                             08/23/2016              CONFIGURATION.NIX(5)
 ```
