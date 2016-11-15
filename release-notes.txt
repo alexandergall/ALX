@@ -1,8 +1,9 @@
-Release Notes for 16.03.ALX.25.6b29cd4
+Release Notes for 16.03.ALX.26.37ac8fa
 
-The app apps.tap.tap, which provides access to a Linux TAP device, has
-been enhanced to export the MTU, MAC address, interface status and
-interface type as statistics counters.
+This release contains a fix for a bug related to the population of the
+pwEnetTable/cpwVcEnetTable MIBs.
 
-A TAP interface can be used as attachment circuit for a VPLA instance
-just like a physical interface.
+The L2VPN application no longer waits for the links of physical ports
+to come up before startup is completed.  This allows the system to
+start properly irrespective of the states of the ports, e.g. if the
+remote side is down.
