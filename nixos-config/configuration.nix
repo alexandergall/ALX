@@ -10,6 +10,7 @@ with lib;
       ./users.nix
       ./snmpd.nix
       ./bgp.nix
+      ./tacacs.nix
       ./l2vpn.nix
     ];
 }
