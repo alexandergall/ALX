@@ -1,27 +1,16 @@
-Release Notes for 15.09.ALX.37.200cbba
+Release Notes for 15.09.ALX.38.9261581
+
+This release merges the Snabb release v2017.11 into ALX.
 
 New features
 
-   * Support for authentication via TACACS+
+   * Support for custom JIT options
 
-     When enabled, logins via ssh are authenticated against the
-     configured TACACS+ server without the need to create local
-     per-user accounts. Instead, users are mapped to pre-configured
-     accounts based on their privilege level. Users with privilege
-     level 15 are mapped to the account "tatacs15", all other privilege
-     levels are mapped to the account "tacacs0". The user tacacs15 is
-     configured to have full sudo privileges. The sudo command has been
-     modified to query the TACACS+ server for the credentials of the
-     original user name.
+     The option -jopt has been added to the l2vpn program to set
+     custom JIT options via the programOptions option of the snabb
+     NixOS module, e.g.
 
-     The service is enabled by setting the "enable" option to "true" and
-     providing the IP address and shared secret in the file
-     /etc/nixos/tacacs.nix, e.g.
-
-     users = {
-       tacplus = {
-         enable = true;
-         server = "192.0.1.1";
-         secret = "someSecret";
-       };
+     services.snabb = {
+       enable = true;
+       programOptions = "-jopt=sizemcode=256 -jopt=maxmcode=2048";
      };
