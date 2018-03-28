@@ -1,16 +1,4 @@
-Release Notes for 16.09.ALXpre81129.e50a41a
+Release Notes for 16.09.ALXpre81131.7b907ea
 
-This release merges the Snabb release v2017.11 into ALX.
-
-New features
-
-   * Support for custom JIT options
-
-     The option -jopt has been added to the l2vpn program to set
-     custom JIT options via the programOptions option of the snabb
-     NixOS module, e.g.
-
-     services.snabb = {
-       enable = true;
-       programOptions = "-jopt=sizemcode=256 -jopt=maxmcode=2048";
-     };
+This release adds a device definition for the Advantech model
+FWA3270A and a modified version of FWA3230A.
