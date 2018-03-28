@@ -837,37 +837,26 @@ called `GigE1/0.100` and `GigE1/0.200` (the names are derived
 automatically from the name of the underlying physical interface and
 the VLAN ID, joined by a dot) on VLANs 100 and and 200, respectively.
 
-It is convenient to store the devices list in a separate NixOS module.
-By convention, these modules are located in `/etc/nixos/devices`.  The
-standard `l2vpn.nix` module imports the pre-defined devices via the
-instruction
-
-```
-imports = [ ./devices ];
-```
-
-which includes the module `/etc/nixos/devices/default.nix`.  This
-module is just a wrapper around vendor-specific modules, which live in
-subdirectories of `/etc/nixos/devices`.
-
 A regular ALX distribution contains a set of pre-defined devices,
-which can be extended by the user.  Apart from the interface
-definitions, these modules may also be used to include arbitrary
-system configurations specific to that device.  For example, the
-`advantech` module `/etc/nixos/devices/advantech/default.nix` imports
-the module `FWA3230A.nix` (located in the same directory), which looks
-essentially like this:
+Apart from the interface definitions, these modules may also be used
+to include arbitrary system configurations specific to that device.
+For example, the `advantech` module
+`/etc/nixos/devices/advantech/default.nix` imports the module
+`classes.nix` (located in the same directory), which looks like this:
 
 ```
 { config, pkgs, lib, ... }:
 
 with lib;
+with (import ../../../../lib/devices.nix lib);
 
 let
-  cfg = config.services.snabb.devices.advantech;
+  activeModel = findActiveModel config.services.snabb.devices;
 in
 {
-  config = mkIf cfg.FWA3230A.enable {
+  imports = [ ./lcd4linux.nix ];
+
+  config = mkIf (elem "FWA32xx" activeModel.modelSet.classes) {
     services.lcd4linux = {
       enable = true;
     };
@@ -875,11 +864,14 @@ in
 }
 ```
 
-If the main configuration activates this model (via
-`services.snabb.devices.advantech.FWA3230A.enable = true`), the system
-service `lcd4linux` is enabled, which starts a daemon that enables the
-LCD display contained in the FWA3230A.  Any model-dependent
-customisations can be implemented in this manner.
+It makes use of an optional attribute of a model called `classes`,
+which is just a list of arbitrary strings that is used to express some
+kind of common properties among related modules.  For example, the
+models `FWA3230A` and `FWA3270A` of the vendor Advantech are identical
+to some extent, which is expressed by assigning both to the class
+called `FWA32xx`.  The `classes.nix` module checks if the currently
+selected module is a member of this class and, if so, activates the
+`lcd4linux` system service, which is common to both models.
 
 #### Immediate Driver Configuration
 
@@ -1310,6 +1302,17 @@ OPTIONS
            Declared by:
                <nixpkgs/nixos/modules/services/networking/snabb>
 
+       services.snabb.devices.<name>.<name>.classes
+           A list of arbitrary strings that can be used to identify models
+           with common properties.
+
+           Type: list of strings
+
+           Default:[ ]
+
+           Declared by:
+               <nixpkgs/nixos/modules/services/networking/snabb>
+
        services.snabb.devices.<name>.<name>.enable
            Whether to enable the vendor/model-specific configuration. Only one
            vendor/model can be enabled.
@@ -1350,6 +1353,27 @@ OPTIONS
            Type: null or submodule
 
            Default:null
+
+           Declared by:
+               <nixpkgs/nixos/modules/services/networking/snabb>
+
+       services.snabb.devices.<name>.<name>.interfaces.*.nicConfig.driver.extraConfig
+           A literal Lua expression that must define a table which will be
+           merged with the default driver configuration, which is a table
+           containing the PCI address and MTU. This allows the specification
+           of driver-specific configuration options.
+
+           Type: null or string
+
+           Default:null
+
+           Example:
+
+               {
+                 wait_for_link = false,
+                 txq = 0,
+                 rxq = 0
+               }
 
            Declared by:
                <nixpkgs/nixos/modules/services/networking/snabb>
@@ -1534,21 +1558,6 @@ OPTIONS
            Declared by:
                <nixpkgs/nixos/modules/services/networking/snabb>
 
-       services.snabb.interfaces.*.addressFamilies.ipv6.enableInboundND
-           If the nextHopMacAddress option is set, this option determines
-           whether neighbor solicitations for the local interface address are
-           processed. If disabled, the adjacent host must use a static
-           neighbor cache entry for the local IPv6 address in order to be able
-           to deliver packets destined for the interface. If nextHopMacAddress
-           is not set, this option is ignored.
-
-           Type: boolean
-
-           Default:true
-
-           Declared by:
-               <nixpkgs/nixos/modules/services/networking/snabb>
-
        services.snabb.interfaces.*.addressFamilies.ipv6.nextHop
            The IPv6 address used as next-hop for all packets sent outbound on
            the interface. It must be part of the same subnet as the local
@@ -1582,6 +1591,62 @@ OPTIONS
            Example:
 
                10GE-SFP+ link to foo
+
+           Declared by:
+               <nixpkgs/nixos/modules/services/networking/snabb>
+
+       services.snabb.interfaces.*.mirror
+           An optional configuration for mirroring traffic from/to the
+           interface.
+
+           Type: null or submodule
+
+           Default:null
+
+           Declared by:
+               <nixpkgs/nixos/modules/services/networking/snabb>
+
+       services.snabb.interfaces.*.mirror.rx
+           Whether to enable mirroring of the packets received by the
+           interface.
+
+           Type: boolean or string
+
+           Default:false
+
+           Declared by:
+               <nixpkgs/nixos/modules/services/networking/snabb>
+
+       services.snabb.interfaces.*.mirror.tx
+           Whether to enable mirroring of the packets transmitted by the
+           interface.
+
+           Type: boolean or string
+
+           Default:false
+
+           Declared by:
+               <nixpkgs/nixos/modules/services/networking/snabb>
+
+       services.snabb.interfaces.*.mirror.type
+           The type of the mirror mechanism to use. If set to tap, a Tap
+           interface is created to receive the mirrored packets for each
+           direction that is enabled. If the corresponding option (rx or tx)
+           is a boolean, the name of the Tap device is constructed from the
+           name of the interface by replacing slashes by hyphens, truncating
+           the name to 13 characters and appending the string "_rx" or "_tx"
+           (i.e. the name will not exceed the system limit of 16 character for
+           interface names on Linux). If the rx or tx option is a string, it
+           will be used as the name of the Tap device instead. If the type is
+           set to pcap, packets will be written to files in the pcap format.
+           If the tx/rx option is a boolean, the file name is constructed from
+           the name of the interface by replacing slashes by hyphens and
+           appending the string "_tx.pcap" or "_tx.pcap". If the tx/rx option
+           is a string, it is used as the file name instead.
+
+           Type: one of "tap", "pcap"
+
+           Default:"tap"
 
            Declared by:
                <nixpkgs/nixos/modules/services/networking/snabb>
@@ -1626,6 +1691,27 @@ OPTIONS
            Type: null or submodule
 
            Default:null
+
+           Declared by:
+               <nixpkgs/nixos/modules/services/networking/snabb>
+
+       services.snabb.interfaces.*.nicConfig.driver.extraConfig
+           A literal Lua expression that must define a table which will be
+           merged with the default driver configuration, which is a table
+           containing the PCI address and MTU. This allows the specification
+           of driver-specific configuration options.
+
+           Type: null or string
+
+           Default:null
+
+           Example:
+
+               {
+                 wait_for_link = false,
+                 txq = 0,
+                 rxq = 0
+               }
 
            Declared by:
                <nixpkgs/nixos/modules/services/networking/snabb>
@@ -1767,21 +1853,6 @@ OPTIONS
            implied.
 
            Type: string
-
-           Declared by:
-               <nixpkgs/nixos/modules/services/networking/snabb>
-
-       services.snabb.interfaces.*.trunk.vlans.*.addressFamilies.ipv6.enableInboundND
-           If the nextHopMacAddress option is set, this option determines
-           whether neighbor solicitations for the local interface address are
-           processed. If disabled, the adjacent host must use a static
-           neighbor cache entry for the local IPv6 address in order to be able
-           to deliver packets destined for the interface. If nextHopMacAddress
-           is not set, this option is ignored.
-
-           Type: boolean
-
-           Default:true
 
            Declared by:
                <nixpkgs/nixos/modules/services/networking/snabb>
@@ -2521,5 +2592,5 @@ COPYRIGHT
 
 
 
-NixOS                             08/23/2016              CONFIGURATION.NIX(5)
+NixOS                             03/28/2018              CONFIGURATION.NIX(5)
 ```
