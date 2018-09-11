@@ -133,40 +133,127 @@ denoted as stable releases.
 
 The [`nixpkgs` Git repository](https://github.com/NixOS/nixpkgs)
 contains a branch for each stable release called `release-<major>`,
-e.g. `release-16.03`.  One particular commit on this branch is marked
-as the start of the major release by the maintainers.  `<minor>`
-counts the number of commits since that particular commit and
-`<commit>` is the abbreviated Git commit from which the release was
-created.
+e.g. `release-16.03`.  The branch point on `master` is marked by the
+tag `<major>-beta`.  When the beta phase has ended, that particular
+commit on the release branch is marked with the tag `<major>` and the
+release is declared to be stable.  The `<minor>` number counts the
+number of commits from an arbitrary starting point and simply serves
+as a way to distinguish new releases by a monotonically increasing
+number. Up to 18.03, this starting point was chosen to be the commit
+of the release tag itself, i.e. `<minor>` started at 0 with the first
+release.  This convention was dropped with 18.03 and `<minor>` now
+simply counts the total number of commits reachable from the release
+tag all the way back to the start of the repository.
 
+Finally, `<commit>` is the abbreviated Git commit from which the
+release was created.
 
-### ALX versioning
+### ALX Maintenance and Versioning
 
-Because ALX is basically a plain NixOS release with a few custom
-modifications, it essentially uses the same versioning method as
-NixOS.  The creation of a major ALX release within the [ALX Git
-repository](https://github.com/alexandergall/nixpkgs.git) proceeds as
+In essence, ALX is a plain NixOS release with a few custom
+modifications.  We refer to this as a *branded NixOS*, though this
+nomenclature is not used by the NixOS community.
+
+The ALX-branded NixOS supplies its own *channel*, which is used to
+track versions of the system configuration and software packages.  A
+channel is a mechanism defined in the NixOS ecosystem that distributes
+the description of an entire system by means of a "Nix expression" and
+its associated binaries (available from a *binary cache*).
+
+The customizations for ALX are kept on [a separate branch in a fork of
+the official `nixpkgs`
+repository](https://github.com/alexandergall/nixpkgs/tree/ALX), which
+is kept in sync with the master branch as detailed below.
+
+Just like the ALX branch keeps track of the master branch, there are
+ALX-specific release branches called `release-<major>.ALX` that keep
+track of their generic counterparts `release-<major>`. ALX releases
+are always created on a ALX-specific release branch.
+
+The following graphic illustrates the structure of branches and merges
+for two release branches.  Circles and arrows denote branch points and
+Git tags and merges, respectively.
+
+![git-branches](git-branches.png)
+
+The workflow is as follows.
+
+The ALX branch is synchronized with the upstream `nixpkgs` master
+branch whenever a new stable NixOS release is generated, i.e. when the
+NixOS maintainers create the `<major>` tag on the new release branch.
+At that point, the ALX maintainer performs the following steps.
+
+   * Merge the tag `<major>-beta` into ALX (the branch
+     `release-<major>` has already been created by the NixOS
+     maintainers)
+
+   * Update `.version` to contain `<major>.ALX`
+
+   * Create the tag `<major>.ALX-base`
+
+   * Create a new branch `release-<major>.ALX` and switch to it with
+     `git checkout -b release-<major>.ALX
+
+   * Merge the current NixOS release branch `release-<major>` from any
+     commit following the `<major>` tag
+
+   * Set the default NixOS channel in `nixos/modules/misc/version.nix` to
+     `file:///ALX/channels/nixos-<major>.ALX`
+
+From this point on, the branch `release-<major>.ALX` receives updates
+exclusively from the ALX and `release-<major>` branches.  The former
+tracks modifications to the ALX customizations, the latter tracks
+updates of the regular NixOS release which are relevant for ALX.
+Alternatively, ALX-specific changes can also be applied to
+`release-<major>.ALX` and then cherry-picked to ALX.
+
+Merges from the ALX branch into any older ALX release branch are no
+longer possible after the `<major>.ALX-base` tag due to the Git
+workflow used in the `nixpkgs` repository, which makes extensive use
+of cherry-picking from the master to release branches.  For the same
+reason, the ALX branch receives no merges from the master until the
+next NixOS release (the merges would create conflicts when propagated
+to the `release-<major>.ALX` branch).
+
+In other words, only the newest ALX release branch receives updates of
+the ALX customizations. Older ALX release branches may still receive
+critical updates from their corresponding NixOS release branches.
+
+ALX version numbers are constructed exactly like those of regular
+NixOS releases with the exception of an additional label `ALX` after
+the major version, e.g. `18.03.ALX.1234.abcdef`.
+
+### ALX releases
+
+Releases are created from this repository.  It contains the
+[ALX-branded NixOS
+repository](https://github.com/alexandergall/nixpkgs) and the [fully
+automated NixOS installer
+repository](https://github.com/alexandergall/nixos-pxe-installer) as
+Git submodules.  Its purpose is to either build an image of a ALX
+system for new installations or a command to upgrade an existing ALX
+system to a newer version as described below.
+
+A new ALX release is essentially just an upgrade of the ALX-branded
+`nixpkgs` submodule.  Releases are prepared on the `master` branch as
 follows.
 
-   * Possibly sync the fork with the upstream NixOS repository
-   * Checkout the NixOS release branch, e.g. `release-16.03`
-   * Tag the commit with `<major>.ALX-base`, e.g. `16.03.ALX-base`
-   * Create a new branch `release-<major>.ALX` from it,
-     e.g. `release-16.03.ALX`
-   * Commit the ALX-specific customisations, which includes appending
-     `.ALX` to `.version`
-   * Add a commit that sets the `<minor>` revision counter to
-     zero (by adjusting a "magic number" at the top of `nixos/release.nix`)
+   * If this is the first release from a new release branch, update
+     the `branch` of `nixpkgs` in `.gitmodules`
 
-Version numbers will then look like `<major>.ALX.<minor>.<commit>`,
-where the initial `<minor>` is 0.  Revisions are created whenever a
-commit is added to the `release-<major>.ALX` branch (e.g. when
-ALX-specific code is modified or when the branch is synced with the
-NixOS branch on which it is based).  Each commit bumps `<minor>` up by
-one.
+   * In the `nixpkgs` submodule, checkout the commit that will make up
+     this ALX release.
 
-Such a modified NixOS release could be called a "branded" NixOS
-release, though this nomenclature is not used by the NixOS community.
+   * Add a file to the directory `release-notes` describing the key
+     features of the new release.  The name of the file should be the
+     exact version number of the release.  The version can be
+     determined by executing `cat $(nix-build -A versionALX --quiet)`.
+
+   * Change to the `release` branch
+
+   * Merge with `master`
+
+   * Execute `nix-build`
 
 ## System requirements
 

@@ -19,7 +19,7 @@ let
       ## system in the nixpkgs submodule.
       nixpkgs = {
         path = ./nixpkgs;
-        stableBranch = false;
+        stableBranch = true;
       };
       inherit system;
 
@@ -38,11 +38,17 @@ let
               ] ++ (optional (pathExists customConfig) customConfig);
   }).config.system.build;
 
+  channel = build.installImage.channel;
+  releaseName = builtins.unsafeDiscardStringContext
+    (builtins.substring 33 (-1) (baseNameOf channel));
+  version = getVersion releaseName;
+
+  versionALX = writeText "ALX-version"
+    ''
+      ${version}
+    '';
+
   upgradeCommand = let
-    channel = build.installImage.channel;
-    releaseName = builtins.unsafeDiscardStringContext
-      (builtins.substring 33 (-1) (baseNameOf channel));
-    version = getVersion releaseName;
     upgradeScript = writeScript "upgrade"
       ''
         #!/run/current-system/sw/bin/bash
@@ -158,7 +164,7 @@ let
   jobs = rec {
     installImage = build.installImage.tarball;
     installConfig = build.installImage.config;
-    inherit upgradeCommand;
+    inherit upgradeCommand versionALX;
   };
 in
   jobs
