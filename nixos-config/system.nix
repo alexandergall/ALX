@@ -7,9 +7,8 @@ with lib;
   ## FIXME: make this configureable
   boot.kernelParams = [ "console=ttyS0,115200n8" ];
 
-  ## Use the gummiboot efi boot loader.
   ## FIXME: support legacy (non-EFI) systems
-  boot.loader.gummiboot.enable = true;
+  boot.loader.systemd-boot.enable = true;
   boot.loader.efi.canTouchEfiVariables = true;
 
   ## Enable EFI support for grub2 package
@@ -21,6 +20,6 @@ with lib;
   services.ntp.servers = [ "pool.ntp.org" ];
 
   environment.systemPackages = with pkgs; [
-     emacs24-nox config.services.snabb.pkg exabgp
+     emacs25-nox config.services.snabb.pkg
   ];
 }

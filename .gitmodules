@@ -1,7 +1,7 @@
 [submodule "nixpkgs"]
 	path = nixpkgs
 	url = https://github.com/alexandergall/nixpkgs.git
-	branch = ALX
+	branch = release-18.03
 [submodule "installer"]
 	path = installer
 	url = https://github.com/alexandergall/nixos-pxe-installer.git

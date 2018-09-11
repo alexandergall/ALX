@@ -27,6 +27,15 @@ let
       ## /etc/nixos on the install target.
       nixosConfigDir = ./nixos-config;
 
+      ## Tacacs support is disabled by default.  Declare the tacplus
+      ## packages here to make it part of the Nix store on the install
+      ## image
+      additionalPkgs = with import ./nixpkgs {};
+        [ exabgp
+          pam_tacplus
+          nss_tacplus
+        ];
+
     };
   };
   customConfig = ./install-image-config.nix;
