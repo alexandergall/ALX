@@ -1,0 +1,38 @@
+Release Notes for 16.03.ALX.34.1710ba7
+
+The l2vpn application has been updated to Snabb version v2017.07,
+which includes new drivers for Intel NICs.
+
+Changes incompatible with previous releases
+
+   * The device templates formerly located in /etc/nixos/devices has
+     been moved to the nixpkgs tree to subject it to the regular
+     upgrade mechanism.  After upgrading to this release, the
+     statement
+
+       imports [ ./devices ];
+
+     must be removed from /etc/nixos/l2vpn.nix and the directory
+     /etc/nixos/devices can be deleted.  The now built-in devices list
+     can be overriden by a configuration like the following, if needed
+
+       config.services.snabb.devices = {
+         advantech = {
+           FWA3230A = {
+             interfaces = mkOverride 0 [
+             ## Complete list of customized interfaces
+             ];
+           };
+         };
+       };
+
+   * The option enableInboundND in the IPv6 address family
+     configuration of an interface has been removed.  This feature is
+     now always enabled.
+
+
+New features
+
+   * Per-direction port-mirroring is supported for all networking
+     devices.  Packets can be copied either to a Tap interface or a
+     file in pcap format.

@@ -1,0 +1,27 @@
+Release Notes for 16.03.ALX.37.3b4d9b3
+
+New features
+
+   * Support for authentication via TACACS+
+
+     When enabled, logins via ssh are authenticated against the
+     configured TACACS+ server without the need to create local
+     per-user accounts. Instead, users are mapped to pre-configured
+     accounts based on their privilege level. Users with privilege
+     level 15 are mapped to the account "tatacs15", all other privilege
+     levels are mapped to the account "tacacs0". The user tacacs15 is
+     configured to have full sudo privileges. The sudo command has been
+     modified to query the TACACS+ server for the credentials of the
+     original user name.
+
+     The service is enabled by setting the "enable" option to "true" and
+     providing the IP address and shared secret in the file
+     /etc/nixos/tacacs.nix, e.g.
+
+     users = {
+       tacplus = {
+         enable = true;
+         server = "192.0.1.1";
+         secret = "someSecret";
+       };
+     };

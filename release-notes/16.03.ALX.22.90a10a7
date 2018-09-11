@@ -1,0 +1,16 @@
+Release Notes for 16.03.ALX.22.90a10a7
+
+Note: this release includes changes to the configuration of
+/etc/nixos/l2vpn.nix that are incompatible with previous releases.
+The configuration needs to be adapted to the new version after an
+upgrade.  Make sure that /etc/nixos/l2vpn.nix contains
+
+  imports = [ ./devices ];
+
+and copy the directory /etc/nixos/devices from nixos-config/devices of
+the ALX source distribution.
+
+The interface configuration has been split into a low-level,
+device-specific part and a high-level part.  The low-level part is
+organized by vendor/module.  Please see the README.md, section
+l2vpn.nix for details.

@@ -1,0 +1,8 @@
+Release Notes for 16.03.ALX.25.6b29cd4
+
+The app apps.tap.tap, which provides access to a Linux TAP device, has
+been enhanced to export the MTU, MAC address, interface status and
+interface type as statistics counters.
+
+A TAP interface can be used as attachment circuit for a VPLA instance
+just like a physical interface.

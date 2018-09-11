@@ -1,0 +1,16 @@
+Release Notes for 16.03.ALX.38.2ff4c98
+
+This release merges the Snabb release v2017.11 into ALX.
+
+New features
+
+   * Support for custom JIT options
+
+     The option -jopt has been added to the l2vpn program to set
+     custom JIT options via the programOptions option of the snabb
+     NixOS module, e.g.
+
+     services.snabb = {
+       enable = true;
+       programOptions = "-jopt=sizemcode=256 -jopt=maxmcode=2048";
+     };

@@ -1,4 +1,1 @@
-Release Notes for 16.09.ALXpre81131.7b907ea
-
-This release adds a device definition for the Advantech model
-FWA3270A and a modified version of FWA3230A.
+release-notes/18.03.ALX.133190.98b2bbc56c0
