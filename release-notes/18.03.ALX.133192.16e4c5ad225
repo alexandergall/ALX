@@ -1,0 +1,6 @@
+Release notes for 18.03.ALX.133192.16e4c5ad225
+
+The generic NixOS module for interface configurations now accepts an
+MTU parameter on a subinterface with the restriction that it must not
+exceed the MTU of the trunk interface on which it is based.
+
