@@ -192,13 +192,10 @@ At that point, the ALX maintainer performs the following steps.
    * Create the tag `<major>.ALX-base`
 
    * Create a new branch `release-<major>.ALX` and switch to it with
-     `git checkout -b release-<major>.ALX
+     `git checkout -b release-<major>.ALX`
 
    * Merge the current NixOS release branch `release-<major>` from any
      commit following the `<major>` tag
-
-   * Set the default NixOS channel in `nixos/modules/misc/version.nix` to
-     `file:///ALX/channels/nixos-<major>.ALX`
 
 From this point on, the branch `release-<major>.ALX` receives updates
 exclusively from the ALX and `release-<major>` branches.  The former
