@@ -1,0 +1,5 @@
+Release Notes for 18.03.ALX.133196.ffd688926ee
+
+Set ALX NixOS channel to file:///ALX/channels/nixos-ALX. It no longer
+contains the version of the underlying NixOS channel to simplify
+upgrades.
