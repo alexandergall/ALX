@@ -17,7 +17,7 @@ let
   }).config.system.build.nfsroot;
 
   jobs = rec {
-    inherit (nfsroot) nfsRootTarball bootLoader kernel;
+    inherit (nfsroot) nfsRootTarball bootLoader;
   };
 in
   jobs
