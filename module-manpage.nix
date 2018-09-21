@@ -7,10 +7,11 @@ let
     inherit pkgs;
     modules = [];
   });
-  manpage = (import ./nixpkgs/nixos/doc/manual {
-    inherit pkgs;
-    version = eval.config.system.nixosVersion;
-    revision = eval.config.system.nixosRevision;
+  config = eval.config;
+  manpage = (import ./nixpkgs/nixos/doc/manual rec {
+    inherit pkgs config;
+    version = config.system.nixos.release;
+    revision = "release-${version}";
     options = eval.options.services.snabb;
   }).manpages;
   manpageASCII =
