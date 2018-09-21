@@ -275,13 +275,6 @@ Only IPv6 is supported as transport protocol for encapsulated Ethernet
 frames, i.e. IPv6 connectivity is required between the endpoints of
 any pseudowire.
 
-IPv6 fragmentation/reassembly is not supported.  The path-MTU between
-the endpoints of any pseudowire must be large enough to accommodate the
-original Ethernet frame (maximum 1514 bytes if no VLAN tags are used)
-plus the encapsulation overhead, which amounts to 66 bytes at the
-maximum (for the L2TPv3 and GRE encapsulations), including the 14-byte
-(outer) Ethernet header.
-
 ## Downloads
 
 The official releases of the ALX system built with default settings
@@ -329,10 +322,10 @@ for details.
 
 ### <a name="buildingALX"></a>ALX
 
-To build a particular ALX release, clone into the corresponding branch of https://github.com/alexandergall/ALX.git, e.g.
+To build the latest ALX release, clone into the `release` branch of https://github.com/alexandergall/ALX.git
 
 ```
-$ git clone --recursive -b release-16.03.ALX https://github.com/alexandergall/ALX.git
+$ git clone --recursive -b release https://github.com/alexandergall/ALX.git
 ```
 
 To build the command needed for upgrading an existing ALX installation to the new version execute
@@ -340,29 +333,30 @@ To build the command needed for upgrading an existing ALX installation to the ne
 ```
 $ nix-build -A upgradeCommand
 [output suppressed]
-building path(s) ‘/nix/store/z48624yyf842y4qkbslnffbm1pnnbfja-nixos-16.03.ALX.0.761972f’
-/nix/store/z48624yyf842y4qkbslnffbm1pnnbfja-nixos-16.03.ALX.0.761972f
+building '/nix/store/s47hkpb1ska1zl6qs22jfxq5abv4p742-nixos-18.03.ALX.133196.ffd688926ee.drv'...
+/nix/store/k56cs8k1znplfa4fbnhcsb5jb66bg7ma-nixos-18.03.ALX.133196.ffd688926ee
 ```
 
-This creates a store derivation (a directory in `/nix/store` which
-contains the result of the build) which contains a shell script
+This creates a store path (a directory in `/nix/store` containing the
+result of the build) which contains a shell script and the release notes
 
 ```
-$ ls -l /nix/store/z48624yyf842y4qkbslnffbm1pnnbfja-nixos-16.03.ALX.0.761972f
-total 7064
--r-xr-xr-x 1 root root 7229720 Jan  1  1970 alx-upgrade
+$ ls -l /nix/store/k56cs8k1znplfa4fbnhcsb5jb66bg7ma-nixos-18.03.ALX.133196.ffd688926ee
+total 10088
+-r-xr-xr-x 1 root root 10322200 Jan  1  1970 alx-upgrade
+-r--r--r-- 1 root root      193 Jan  1  1970 release-notes.txt
 ```
 
-that can be executed on the appliance to [upgrade it to this
-release](#upgrading)
+The shell-sctip `alx-upgrade` can be executed on the appliance to
+[upgrade it to this release](#upgrading)
 
 To build the files needed for an automated installation of a new system, execute
 
 ```
 $ nix-build -A installImage -A installConfig
 [output suppressed]
-/nix/store/3px3vm4gvqk2s8sfq00vmk1159lnwaxp-install-tarball-nixos-16.03.ALX.0.761972f
-/nix/store/7fym30dgr33xyss5aa9zvlrmb9sxjf5k-install-config
+/nix/store/lwjr3l9qa204kffl28rx1n3yrj57lmy7-install-tarball-nixos-18.03.ALX.133196.ffd688926ee
+/nix/store/26bakcd6si5fkkw249lb01w44yj88zly-install-config
 ```
 
 The resulting files are used to [install a system from
@@ -390,10 +384,10 @@ into an ALX system as follows.
      ```
      # nix-channel --remove nixos
      ```
-   * Add the "branded" ALX `nixos` channel, e.g. for the `16.03.ALX` major release
+   * Add the "branded" ALX `nixos` channel
 
      ```
-     # nix-channel --add file:///ALX/channels/nixos-16.03.ALX nixos
+     # nix-channel --add file:///ALX/channels/nixos-ALX nixos
      ```
    * Merge `/etc/nixos` with the contents of the `nixos-config` directory of the
      ALX Git repository
@@ -422,11 +416,9 @@ To perform a fully automated installation, either [build the installer
 and ALX install image yourself](#building) or get the following files
 
    * From http://alx.net.switch.ch/installer/
-      * `bootx64.efi`
-      * `bzImage`
+      * `boot-loader.tar.xz`
       * `nfsroot.tar.xz`
-   * From http://alx.net.switch.ch/releases/ within the directory of the
-     desired release (e.g. http://alx.net.switch.ch/releases/16.03.ALX/nixos-16.03.ALX.0.761972f/)
+   * From http://alx.net.switch.ch/releases/latest/
       * `nixos.tar.gz`
       * `config`
 
@@ -449,23 +441,6 @@ located at `/srv/nixos/nfsroot`
 The system will be installed after performing a PXE network boot off
 the DHCP configuration.
 
-In the default configuration, the Grub boot loader `bootx64.efi`
-expects to be able to boot from the NIC referred to as `efinet0` and
-the Linux kernel will perform its DHCP request and NFS mount operation
-over device `eth0`.  If you have a multi-homed host and need to select
-different interfaces (or your system uses different assignments of
-interface names), you can either generate a customized boot loader as
-described in one of the [installer
-examples](https://github.com/alexandergall/nixos-pxe-installer/blob/master/README.md#examples-1)
-or you can download the files
-
-  * `grub.cfg`
-  * `generate`
-
-from http://alx.net.switch.ch/installer/ and [generate `bootx64.efi` manually](https://github.com/alexandergall/nixos-pxe-installer/blob/master/README.md#updating-the-grub-boot-loader-manually)
-
-
-
 #### Via a standard NixOS installation
 
 Please refer to the [standard method for installing a fresh NixOS
@@ -478,8 +453,8 @@ existing NixOS system](#installFromExistingNixOS)
 
 To upgrade an existing ALX installation to a new version, either
 download the file `alx-upgrade` from the directory of the desired
-target version on http://alx.net.switch.ch/releases/
-(e.g. http://alx.net.switch.ch/releases/16.03.ALX/nixos-16.03.ALX.0.761972f/alx-upgrade)
+target version on http://alx.net.switch.ch/releases/ (or
+http://alx.net.switch.ch/releases/latest for the most recent release)
 or [build it yourself](#buildingALX) then copy it to an arbitrary
 location on the system that should be upgraded.
 
