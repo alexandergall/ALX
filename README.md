@@ -1313,10 +1313,8 @@ configuration based on the local copy.
 ```
 CONFIGURATION.NIX(5)         NixOS Reference Pages        CONFIGURATION.NIX(5)
 
-
-
 NAME
-       configuration.nix - NixOS system configuration specification
+       configuration.nix __ - NixOS system configuration specification
 
 DESCRIPTION
        The file /etc/nixos/configuration.nix contains the declarative
@@ -1326,6 +1324,18 @@ DESCRIPTION
 
 OPTIONS
        You can use the following options in configuration.nix.
+
+       services.snabb.enable
+           Whether to enable the Snabb service. When disabled, no instance
+           will be started. When enabled, individual instances can be enabled
+           or disabled independently.
+
+           Type: boolean
+
+           Default: false
+
+           Declared by:
+               <nixpkgs/nixos/modules/services/networking/snabb>
 
        services.snabb.devices
            List of supported devices by vendor and model. The model
@@ -1337,7 +1347,7 @@ OPTIONS
 
            Type: attribute set of attribute set of submoduless
 
-           Default:{ }
+           Default: { }
 
            Example:
 
@@ -1361,24 +1371,24 @@ OPTIONS
            Declared by:
                <nixpkgs/nixos/modules/services/networking/snabb>
 
-       services.snabb.devices.<name>.<name>.classes
-           A list of arbitrary strings that can be used to identify models
-           with common properties.
-
-           Type: list of strings
-
-           Default:[ ]
-
-           Declared by:
-               <nixpkgs/nixos/modules/services/networking/snabb>
-
        services.snabb.devices.<name>.<name>.enable
            Whether to enable the vendor/model-specific configuration. Only one
            vendor/model can be enabled.
 
            Type: boolean
 
-           Default:false
+           Default: false
+
+           Declared by:
+               <nixpkgs/nixos/modules/services/networking/snabb>
+
+       services.snabb.devices.<name>.<name>.classes
+           A list of arbitrary strings that can be used to identify models
+           with common properties.
+
+           Type: list of strings
+
+           Default: [ ]
 
            Declared by:
                <nixpkgs/nixos/modules/services/networking/snabb>
@@ -1388,7 +1398,7 @@ OPTIONS
 
            Type: list of submodules
 
-           Default:[ ]
+           Default: [ ]
 
            Declared by:
                <nixpkgs/nixos/modules/services/networking/snabb>
@@ -1399,9 +1409,9 @@ OPTIONS
 
            Type: string
 
-           Default:null
+           Default: null
 
-           Example:"TenGigE0/0"
+           Example: "TenGigE0/0"
 
            Declared by:
                <nixpkgs/nixos/modules/services/networking/snabb>
@@ -1411,7 +1421,7 @@ OPTIONS
 
            Type: null or submodule
 
-           Default:null
+           Default: null
 
            Declared by:
                <nixpkgs/nixos/modules/services/networking/snabb>
@@ -1424,7 +1434,7 @@ OPTIONS
 
            Type: null or string
 
-           Default:null
+           Default: null
 
            Example:
 
@@ -1444,7 +1454,7 @@ OPTIONS
 
            Type: null or string
 
-           Default:null
+           Default: null
 
            Example:
 
@@ -1458,7 +1468,7 @@ OPTIONS
 
            Type: string
 
-           Example:"Intel82599"
+           Example: "Intel82599"
 
            Declared by:
                <nixpkgs/nixos/modules/services/networking/snabb>
@@ -1468,7 +1478,7 @@ OPTIONS
 
            Type: string
 
-           Example:"apps.intel.intel_app"
+           Example: "apps.intel.intel_app"
 
            Declared by:
                <nixpkgs/nixos/modules/services/networking/snabb>
@@ -1480,21 +1490,9 @@ OPTIONS
 
            Type: null or string
 
-           Default:null
+           Default: null
 
-           Example:"0000:01:00.0"
-
-           Declared by:
-               <nixpkgs/nixos/modules/services/networking/snabb>
-
-       services.snabb.enable
-           Whether to enable the Snabb service. When disabled, no instance
-           will be started. When enabled, individual instances can be enabled
-           or disabled independently.
-
-           Type: boolean
-
-           Default:false
+           Example: "0000:01:00.0"
 
            Declared by:
                <nixpkgs/nixos/modules/services/networking/snabb>
@@ -1505,7 +1503,7 @@ OPTIONS
 
            Type: list of attribute sets
 
-           Default:[ ]
+           Default: [ ]
 
            Declared by:
                <nixpkgs/nixos/modules/services/networking/snabb>
@@ -1519,7 +1517,7 @@ OPTIONS
 
            Type: list of submodules
 
-           Default:[ ]
+           Default: [ ]
 
            Example:
 
@@ -1584,7 +1582,7 @@ OPTIONS
 
            Type: null or submodule
 
-           Default:null
+           Default: null
 
            Declared by:
                <nixpkgs/nixos/modules/services/networking/snabb>
@@ -1594,7 +1592,7 @@ OPTIONS
 
            Type: null or submodule
 
-           Default:null
+           Default: null
 
            Example:
 
@@ -1634,7 +1632,7 @@ OPTIONS
 
            Type: null or string
 
-           Default:null
+           Default: null
 
            Declared by:
                <nixpkgs/nixos/modules/services/networking/snabb>
@@ -1645,7 +1643,7 @@ OPTIONS
 
            Type: null or string
 
-           Default:null
+           Default: null
 
            Example:
 
@@ -1660,7 +1658,7 @@ OPTIONS
 
            Type: null or submodule
 
-           Default:null
+           Default: null
 
            Declared by:
                <nixpkgs/nixos/modules/services/networking/snabb>
@@ -1671,7 +1669,7 @@ OPTIONS
 
            Type: boolean or string
 
-           Default:false
+           Default: false
 
            Declared by:
                <nixpkgs/nixos/modules/services/networking/snabb>
@@ -1682,7 +1680,7 @@ OPTIONS
 
            Type: boolean or string
 
-           Default:false
+           Default: false
 
            Declared by:
                <nixpkgs/nixos/modules/services/networking/snabb>
@@ -1705,7 +1703,7 @@ OPTIONS
 
            Type: one of "tap", "pcap"
 
-           Default:"tap"
+           Default: "tap"
 
            Declared by:
                <nixpkgs/nixos/modules/services/networking/snabb>
@@ -1716,9 +1714,9 @@ OPTIONS
            trunk, the 4 bytes attributed to the VLAN tag must be included in
            the MTU.
 
-           Type: integer
+           Type: signed integer
 
-           Default:1514
+           Default: 1514
 
            Declared by:
                <nixpkgs/nixos/modules/services/networking/snabb>
@@ -1749,7 +1747,7 @@ OPTIONS
 
            Type: null or submodule
 
-           Default:null
+           Default: null
 
            Declared by:
                <nixpkgs/nixos/modules/services/networking/snabb>
@@ -1762,7 +1760,7 @@ OPTIONS
 
            Type: null or string
 
-           Default:null
+           Default: null
 
            Example:
 
@@ -1782,7 +1780,7 @@ OPTIONS
 
            Type: null or string
 
-           Default:null
+           Default: null
 
            Example:
 
@@ -1796,7 +1794,7 @@ OPTIONS
 
            Type: string
 
-           Example:"Intel82599"
+           Example: "Intel82599"
 
            Declared by:
                <nixpkgs/nixos/modules/services/networking/snabb>
@@ -1806,7 +1804,7 @@ OPTIONS
 
            Type: string
 
-           Example:"apps.intel.intel_app"
+           Example: "apps.intel.intel_app"
 
            Declared by:
                <nixpkgs/nixos/modules/services/networking/snabb>
@@ -1818,9 +1816,9 @@ OPTIONS
 
            Type: null or string
 
-           Default:null
+           Default: null
 
-           Example:"0000:01:00.0"
+           Example: "0000:01:00.0"
 
            Declared by:
                <nixpkgs/nixos/modules/services/networking/snabb>
@@ -1830,7 +1828,7 @@ OPTIONS
 
            Type: boolean
 
-           Default:false
+           Default: false
 
            Declared by:
                <nixpkgs/nixos/modules/services/networking/snabb>
@@ -1845,9 +1843,9 @@ OPTIONS
 
            Type: one of "dot1q", "dot1ad" or string
 
-           Default:"dot1q"
+           Default: "dot1q"
 
-           Example:"0x9100"
+           Example: "0x9100"
 
            Declared by:
                <nixpkgs/nixos/modules/services/networking/snabb>
@@ -1857,7 +1855,7 @@ OPTIONS
 
            Type: list of submodules
 
-           Default:[ ]
+           Default: [ ]
 
            Example:
 
@@ -1883,7 +1881,7 @@ OPTIONS
 
            Type: null or submodule
 
-           Default:null
+           Default: null
 
            Declared by:
                <nixpkgs/nixos/modules/services/networking/snabb>
@@ -1893,7 +1891,7 @@ OPTIONS
 
            Type: null or submodule
 
-           Default:null
+           Default: null
 
            Example:
 
@@ -1933,7 +1931,7 @@ OPTIONS
 
            Type: null or string
 
-           Default:null
+           Default: null
 
            Declared by:
                <nixpkgs/nixos/modules/services/networking/snabb>
@@ -1943,7 +1941,21 @@ OPTIONS
 
            Type: string
 
-           Default:""
+           Default: ""
+
+           Declared by:
+               <nixpkgs/nixos/modules/services/networking/snabb>
+
+       services.snabb.interfaces.*.trunk.vlans.*.mtu
+           The MTU of the subinterface in bytes, including the full Ethernet
+           header. In particular, if the interface is configured as VLAN
+           trunk, the 4 bytes attributed to the VLAN tag must be included in
+           the MTU. The MTU must not exceed that of the trunk on which it is
+           based. By default, the MTU is inherited from the trunk.
+
+           Type: null or signed integer
+
+           Default: null
 
            Declared by:
                <nixpkgs/nixos/modules/services/networking/snabb>
@@ -1953,9 +1965,9 @@ OPTIONS
            ID 0 designates the subinterfaces to which all untagged packets are
            assigned.
 
-           Type: integer
+           Type: signed integer
 
-           Default:0
+           Default: 0
 
            Declared by:
                <nixpkgs/nixos/modules/services/networking/snabb>
@@ -1966,7 +1978,7 @@ OPTIONS
 
            Type: package
 
-           Default:(build of snabb-2016.08)
+           Default: (build of snabb-2018.01.2)
 
            Example:
 
@@ -1980,7 +1992,7 @@ OPTIONS
 
            Type: string
 
-           Default:""
+           Default: ""
 
            Example:
 
@@ -1994,7 +2006,7 @@ OPTIONS
 
            Type: attribute set of submodules
 
-           Default:{ }
+           Default: { }
 
            Example:
 
@@ -2009,7 +2021,7 @@ OPTIONS
 
            Type: boolean
 
-           Default:false
+           Default: false
 
            Declared by:
                <nixpkgs/nixos/modules/services/networking/snabb/programs/
@@ -2021,7 +2033,7 @@ OPTIONS
 
            Type: null or string
 
-           Default:null
+           Default: null
 
            Example:
 
@@ -2036,7 +2048,7 @@ OPTIONS
 
            Type: attribute set of submodules
 
-           Default:{ }
+           Default: { }
 
            Declared by:
                <nixpkgs/nixos/modules/services/networking/snabb/programs/
@@ -2047,9 +2059,9 @@ OPTIONS
 
            Type: string
 
-           Default:null
+           Default: null
 
-           Example:"2001:DB8:0:1::1"
+           Example: "2001:DB8:0:1::1"
 
            Declared by:
                <nixpkgs/nixos/modules/services/networking/snabb/programs/
@@ -2062,7 +2074,7 @@ OPTIONS
 
            Type: attribute set of strings
 
-           Default:{ }
+           Default: { }
 
            Example:
 
@@ -2078,7 +2090,7 @@ OPTIONS
 
            Type: submodule
 
-           Default:{ type = "learning"; }
+           Default: { type = "learning"; }
 
            Example:
 
@@ -2102,7 +2114,7 @@ OPTIONS
 
            Type: submodule
 
-           Default:{ }
+           Default: { }
 
            Example:
 
@@ -2117,9 +2129,9 @@ OPTIONS
            MAC address is deleted from the MAC address table if no activity
            has been observed during that interval.
 
-           Type: integer
+           Type: signed integer
 
-           Default:30
+           Default: 30
 
            Declared by:
                <nixpkgs/nixos/modules/services/networking/snabb/programs/
@@ -2131,7 +2143,7 @@ OPTIONS
 
            Type: boolean
 
-           Default:false
+           Default: false
 
            Declared by:
                <nixpkgs/nixos/modules/services/networking/snabb/programs/
@@ -2142,7 +2154,7 @@ OPTIONS
 
            Type: one of "flooding", "learning"
 
-           Default:"learning"
+           Default: "learning"
 
            Declared by:
                <nixpkgs/nixos/modules/services/networking/snabb/programs/
@@ -2154,7 +2166,7 @@ OPTIONS
 
            Type: submodule
 
-           Default:{ deadFactor = 3; heartbeat = 10; }
+           Default: { deadFactor = 3; heartbeat = 10; }
 
            Example:
 
@@ -2165,25 +2177,25 @@ OPTIONS
                <nixpkgs/nixos/modules/services/networking/snabb/programs/
                l2vpn>
 
-       services.snabb.programs.l2vpn.instances.<name>.vpls.<name>.defaultControlChannel.deadFactor
-           The number of successive heartbeat intervals after which the peer
-           is declared to be dead (unrechable) unless at least one heartbeat
-           message has been received.
-
-           Type: integer
-
-           Default:3
-
-           Declared by:
-               <nixpkgs/nixos/modules/services/networking/snabb/programs/
-               l2vpn>
-
        services.snabb.programs.l2vpn.instances.<name>.vpls.<name>.defaultControlChannel.enable
            Wether to enable the control channel.
 
            Type: boolean
 
-           Default:true
+           Default: true
+
+           Declared by:
+               <nixpkgs/nixos/modules/services/networking/snabb/programs/
+               l2vpn>
+
+       services.snabb.programs.l2vpn.instances.<name>.vpls.<name>.defaultControlChannel.deadFactor
+           The number of successive heartbeat intervals after which the peer
+           is declared to be dead (unrechable) unless at least one heartbeat
+           message has been received.
+
+           Type: signed integer
+
+           Default: 3
 
            Declared by:
                <nixpkgs/nixos/modules/services/networking/snabb/programs/
@@ -2193,9 +2205,9 @@ OPTIONS
            The interval in seconds at which heartbeat messages are sent to the
            peer. The value 0 disables the control channel.
 
-           Type: integer
+           Type: signed integer
 
-           Default:10
+           Default: 10
 
            Declared by:
                <nixpkgs/nixos/modules/services/networking/snabb/programs/
@@ -2207,7 +2219,7 @@ OPTIONS
 
            Type: submodule
 
-           Default:{ type = "l2tpv3"; }
+           Default: { type = "l2tpv3"; }
 
            Example:
 
@@ -2227,7 +2239,7 @@ OPTIONS
 
            Type: boolean
 
-           Default:false
+           Default: false
 
            Example:
 
@@ -2245,7 +2257,7 @@ OPTIONS
 
            Type: null or string
 
-           Default:null
+           Default: null
 
            Example:
 
@@ -2264,7 +2276,7 @@ OPTIONS
 
            Type: string
 
-           Default:''\x00\x00\x00\x00\x00\x00\x00\x00''
+           Default: ''\x00\x00\x00\x00\x00\x00\x00\x00''
 
            Example:
 
@@ -2283,7 +2295,7 @@ OPTIONS
 
            Type: string
 
-           Default:''\x00\x00\x00\x00\x00\x00\x00\x00''
+           Default: ''\x00\x00\x00\x00\x00\x00\x00\x00''
 
            Example:
 
@@ -2298,7 +2310,7 @@ OPTIONS
 
            Type: one of "l2tpv3", "gre"
 
-           Default:"l2tpv3"
+           Default: "l2tpv3"
 
            Declared by:
                <nixpkgs/nixos/modules/services/networking/snabb/programs/
@@ -2309,7 +2321,7 @@ OPTIONS
 
            Type: string
 
-           Default:""
+           Default: ""
 
            Declared by:
                <nixpkgs/nixos/modules/services/networking/snabb/programs/
@@ -2324,11 +2336,11 @@ OPTIONS
            mismatch of local and remote MTUs will result in the pseudowire
            being disabled.
 
-           Type: integer
+           Type: signed integer
 
-           Default:null
+           Default: null
 
-           Example:1514
+           Example: 1514
 
            Declared by:
                <nixpkgs/nixos/modules/services/networking/snabb/programs/
@@ -2341,7 +2353,7 @@ OPTIONS
 
            Type: attribute set of submodules
 
-           Default:{ }
+           Default: { }
 
            Example:
 
@@ -2369,9 +2381,9 @@ OPTIONS
 
            Type: string
 
-           Default:null
+           Default: null
 
-           Example:"2001:DB8:0:1::1"
+           Example: "2001:DB8:0:1::1"
 
            Declared by:
                <nixpkgs/nixos/modules/services/networking/snabb/programs/
@@ -2384,7 +2396,7 @@ OPTIONS
 
            Type: null or submodule
 
-           Default:null
+           Default: null
 
            Example:
 
@@ -2395,25 +2407,25 @@ OPTIONS
                <nixpkgs/nixos/modules/services/networking/snabb/programs/
                l2vpn>
 
-       services.snabb.programs.l2vpn.instances.<name>.vpls.<name>.pseudowires.<name>.controlChannel.deadFactor
-           The number of successive heartbeat intervals after which the peer
-           is declared to be dead (unrechable) unless at least one heartbeat
-           message has been received.
-
-           Type: integer
-
-           Default:3
-
-           Declared by:
-               <nixpkgs/nixos/modules/services/networking/snabb/programs/
-               l2vpn>
-
        services.snabb.programs.l2vpn.instances.<name>.vpls.<name>.pseudowires.<name>.controlChannel.enable
            Wether to enable the control channel.
 
            Type: boolean
 
-           Default:true
+           Default: true
+
+           Declared by:
+               <nixpkgs/nixos/modules/services/networking/snabb/programs/
+               l2vpn>
+
+       services.snabb.programs.l2vpn.instances.<name>.vpls.<name>.pseudowires.<name>.controlChannel.deadFactor
+           The number of successive heartbeat intervals after which the peer
+           is declared to be dead (unrechable) unless at least one heartbeat
+           message has been received.
+
+           Type: signed integer
+
+           Default: 3
 
            Declared by:
                <nixpkgs/nixos/modules/services/networking/snabb/programs/
@@ -2423,9 +2435,9 @@ OPTIONS
            The interval in seconds at which heartbeat messages are sent to the
            peer. The value 0 disables the control channel.
 
-           Type: integer
+           Type: signed integer
 
-           Default:10
+           Default: 10
 
            Declared by:
                <nixpkgs/nixos/modules/services/networking/snabb/programs/
@@ -2437,7 +2449,7 @@ OPTIONS
 
            Type: null or submodule
 
-           Default:null
+           Default: null
 
            Example:
 
@@ -2457,7 +2469,7 @@ OPTIONS
 
            Type: boolean
 
-           Default:false
+           Default: false
 
            Example:
 
@@ -2475,7 +2487,7 @@ OPTIONS
 
            Type: null or string
 
-           Default:null
+           Default: null
 
            Example:
 
@@ -2494,7 +2506,7 @@ OPTIONS
 
            Type: string
 
-           Default:''\x00\x00\x00\x00\x00\x00\x00\x00''
+           Default: ''\x00\x00\x00\x00\x00\x00\x00\x00''
 
            Example:
 
@@ -2513,7 +2525,7 @@ OPTIONS
 
            Type: string
 
-           Default:''\x00\x00\x00\x00\x00\x00\x00\x00''
+           Default: ''\x00\x00\x00\x00\x00\x00\x00\x00''
 
            Example:
 
@@ -2528,7 +2540,7 @@ OPTIONS
 
            Type: one of "l2tpv3", "gre"
 
-           Default:"l2tpv3"
+           Default: "l2tpv3"
 
            Declared by:
                <nixpkgs/nixos/modules/services/networking/snabb/programs/
@@ -2541,7 +2553,7 @@ OPTIONS
 
            Type: string
 
-           Example:"TenGigE0/0.100"
+           Example: "TenGigE0/0.100"
 
            Declared by:
                <nixpkgs/nixos/modules/services/networking/snabb/programs/
@@ -2553,9 +2565,9 @@ OPTIONS
            a pseudowire) but not used for multiplexing/demultiplexing of VPN
            traffic.
 
-           Type: integer
+           Type: signed integer
 
-           Default:1
+           Default: 1
 
            Declared by:
                <nixpkgs/nixos/modules/services/networking/snabb/programs/
@@ -2567,7 +2579,7 @@ OPTIONS
 
            Type: null or string
 
-           Default:null
+           Default: null
 
            Example:
 
@@ -2583,7 +2595,7 @@ OPTIONS
 
            Type: string
 
-           Default:"/var/lib/snabb/shmem"
+           Default: "/var/lib/snabb/shmem"
 
            Example:
 
@@ -2598,7 +2610,7 @@ OPTIONS
 
            Type: boolean
 
-           Default:false
+           Default: false
 
            Declared by:
                <nixpkgs/nixos/modules/services/networking/snabb>
@@ -2608,9 +2620,9 @@ OPTIONS
            shared memory segments to the SNMP sub-agents are synchronized with
            the underlying data sources such as interface counters.
 
-           Type: integer
+           Type: signed integer
 
-           Default:5
+           Default: 5
 
            Declared by:
                <nixpkgs/nixos/modules/services/networking/snabb>
@@ -2621,7 +2633,7 @@ OPTIONS
 
            Type: string
 
-           Default:"/var/lib/snabb"
+           Default: "/var/lib/snabb"
 
            Example:
 
@@ -2637,7 +2649,7 @@ OPTIONS
 
            Type: unspecified
 
-           Default:[ ]
+           Default: [ ]
 
            Declared by:
                <nixpkgs/nixos/modules/services/networking/snabb>
@@ -2647,9 +2659,7 @@ AUTHOR
            Author
 
 COPYRIGHT
-       Copyright (C) 2007-2015 Eelco Dolstra
+       Copyright © 2007-2018 Eelco Dolstra
 
-
-
-NixOS                             03/28/2018              CONFIGURATION.NIX(5)
+NixOS                             01/01/1970              CONFIGURATION.NIX(5)
 ```
