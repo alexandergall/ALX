@@ -17,21 +17,5 @@ with lib;
     ## space.
     rootDevice = "/dev/sda";
 
-    networking = {
-
-      ## The installer creates (overwrites) the file
-      ## /etc/nixos/networking/interfaces.nix, which
-      ## contains the configuration of network interfaces.
-      ## By default, DHCP is enabled for all interfaces.
-      useDHCP = true;
-
-      ## The following would disable DHCP and cause the installer to create
-      ## a static network configuration for the interface "enp12s0" (using the
-      ## "usePredictableInterfaceNames" feature) from the information
-      ## discovered via DHCP when the system is configured.
-      # useDHCP = false;
-      # staticInterfaceFromDHCP = "enp12s0";
-
-    };
   };
 }
