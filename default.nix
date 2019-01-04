@@ -13,12 +13,19 @@ with lib;
 let
 
   installImageConfig = {
-    installImage = {
+    installImage = rec {
 
       ## Derive the client's configuration from the "branded" nixpkgs
       ## system in the nixpkgs submodule.
       nixpkgs = {
-        path = ./nixpkgs;
+        path = fetchgit {
+	  url = "https://github.com/alexandergall/nixpkgs.git";
+          rev = "fd906977b68b02e80ce2709551271d606fec9a75";
+	  leaveDotGit = true;
+	  deepClone = true;
+	  ## nix-prefetch-git --url https://github.com/alexandergall/nixpkgs.git --rev <rev> --leave-dotGit --deepClone
+	  sha256= "11zr3hhpsag2g1fshgp03frlkrqd3wfakp9rraiybnj5h530fnqm";
+	};
         stableBranch = true;
       };
       inherit system;
@@ -30,7 +37,7 @@ let
       ## Tacacs support is disabled by default.  Declare the tacplus
       ## packages here to make it part of the Nix store on the install
       ## image
-      additionalPkgs = with import ./nixpkgs {};
+      additionalPkgs = with import nixpkgs.path {};
         [ exabgp
           pam_tacplus
           nss_tacplus
