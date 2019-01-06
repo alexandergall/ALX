@@ -16,13 +16,21 @@ let
       rec { parentPath = builtins.toPath parent;
             parentFiltered = builtins.filterSource
               (path: type:
-	        path == parentPath + "/.git" || path == parentPath + "/.git/modules" ||
+                path == parentPath + "/.git" || path == parentPath + "/.git/modules" ||
                 hasPrefix (parentPath + "/.git/modules/" + moduleName) path ||
                 hasPrefix (parentPath + "/" + modulePath) path) parent; }
       ''
         set -e
         cd $parentFiltered"/"${modulePath}
-        test -f .git
+        mkdir $out
+        tar cpf - . | (cd $out && tar xpf -)
+        if [ -d .git ]; then
+          exit 0
+        elif [ ! -f .git ]; then
+          echo "missing .git"
+          exit 1
+        fi
+
         gitdir=$(cat .git | cut -d' ' -f2)
         if [[ $gitdir =~ ^/ ]]; then
           ## gitdir is supposed to be a relative path, but it isn't always,
@@ -30,8 +38,6 @@ let
           ## version of git.
           gitdir=$(realpath --canonicalize-missing --relative-to $parentPath"/"${modulePath} $gitdir)
         fi
-        mkdir $out
-        tar cpf - . | (cd $out && tar xpf -)
         chmod u+w $out
         rm -f $out/.git
         cp -prd $gitdir $out/.git
