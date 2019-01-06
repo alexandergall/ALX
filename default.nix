@@ -20,6 +20,7 @@ let
                 hasPrefix (parentPath + "/.git/modules/" + moduleName) path ||
                 hasPrefix (parentPath + "/" + modulePath) path) parent; }
       ''
+        set -x
         set -e
         cd $parentFiltered"/"${modulePath}
         test -f .git
