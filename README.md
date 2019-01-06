@@ -222,46 +222,35 @@ the major version, e.g. `18.03.ALX.1234.abcdef`.
 
 ### ALX releases
 
-Releases are created from this repository.  It contains the [fully
+Releases are created from this repository.  It contains the
+[ALX-branded NixOS
+repository](https://github.com/alexandergall/nixpkgs) and the [fully
 automated NixOS installer
-repository](https://github.com/alexandergall/nixos-pxe-installer) as a
-Git submodule and pulls in a specific commit of the [ALX-branded NixOS
-repository](https://github.com/alexandergall/nixpkgs when the install
-image is built.  Its purpose is to either build an image of a ALX
+repository](https://github.com/alexandergall/nixos-pxe-installer) as
+Git submodules.  Its purpose is to either build an image of a ALX
 system for new installations or a command to upgrade an existing ALX
 system to a newer version as described below.
 
-A new ALX release is essentially just an update of the commit of the
-ALX-branded `nixpkgs` repository from which the install image is to be
-built.  Releases are prepared on the `master` branch as follows.
+A new ALX release is essentially just an upgrade of the ALX-branded
+`nixpkgs` submodule.  Releases are prepared on the `master` branch as
+follows.
 
-   * Update the `rev` attribute in the call to `fetchgit` for the
-     `installImage.nixpkgs.path` option in `default.nix`
+   * If this is the first release from a new release branch, update
+     the `branch` of `nixpkgs` in `.gitmodules`
 
-   * Execute `nix-prefetch-git --url https://github.com/alexandergall/nixpkgs.git --rev <rev> --leave-dotGit --deepClone`
-     and record the new hash in the `sha256` attribute.
+   * In the `nixpkgs` submodule, checkout the commit that will make up
+     this ALX release.
 
    * Add a file to the directory `release-notes` describing the key
      features of the new release.  The name of the file should be the
      exact version number of the release.  The version can be
      determined by executing `cat $(nix-build -A versionALX --quiet)`.
 
-   * `git commit`
-
    * Change to the `release` branch
 
    * Merge with `master`
 
    * Execute `nix-build`
-
-To update the `installer` submodule:
-
-   * In the `installer` submodule, checkout the desired commit of the
-     `nixos-pxe-installer` repository
-
-   * `git add installer`
-
-   * `git commit`
 
 ## System requirements
 
