@@ -11,6 +11,34 @@ with import <nixpkgs> { inherit system; };
 with lib;
 
 let
+  submoduleWithDotGitToStore = parent: modulePath: moduleName:
+    runCommand "submodule-${moduleName}-with-dotgit"
+      rec { parentPath = builtins.toPath parent;
+            parentFiltered = builtins.filterSource
+              (path: type:
+	        path == parentPath + "/.git" || path == parentPath + "/.git/modules" ||
+                hasPrefix (parentPath + "/.git/modules/" + moduleName) path ||
+                hasPrefix (parentPath + "/" + modulePath) path) parent; }
+      ''
+        set -e
+        cd $parentFiltered"/"${modulePath}
+        test -f .git
+        gitdir=$(cat .git | cut -d' ' -f2)
+        if [[ $gitdir =~ ^/ ]]; then
+          ## gitdir is supposed to be a relative path, but it isn't always,
+          ## depending on how the submodule has been checked out and on the
+          ## version of git.
+          gitdir=$(realpath --canonicalize-missing --relative-to $parentPath"/"${modulePath} $gitdir)
+        fi
+        mkdir $out
+        tar cpf - . | (cd $out && tar xpf -)
+        chmod u+w $out
+        rm -f $out/.git
+        cp -prd $gitdir $out/.git
+        chmod u+w $out/.git
+        grep -v worktree $out/.git/config >$out/.git/config.new
+        mv $out/.git/config.new $out/.git/config
+      '';
 
   installImageConfig = {
     installImage = {
@@ -18,7 +46,7 @@ let
       ## Derive the client's configuration from the "branded" nixpkgs
       ## system in the nixpkgs submodule.
       nixpkgs = {
-        path = ./nixpkgs;
+        path = submoduleWithDotGitToStore ./. "nixpkgs" "nixpkgs";
         stableBranch = true;
       };
       inherit system;
