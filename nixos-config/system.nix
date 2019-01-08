@@ -5,7 +5,8 @@ with lib;
 {
   ## Activate serial console
   ## FIXME: make this configureable
-  boot.kernelParams = [ "console=ttyS0,115200n8" ];
+  boot.kernelParams = with import ./serial-config.nix;
+    [ "console=ttyS${serialUnit},${linuxConsoleConfig}" ];
 
   ## FIXME: support legacy (non-EFI) systems
   boot.loader.systemd-boot.enable = true;
