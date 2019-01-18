@@ -1,0 +1,16 @@
+Release Notes for 18.09.ALX.993.1ef68b4d83e
+
+Add device profiles for new vendor "superMicro" based on the mainboard
+X11SSW-F:
+
+X11SSWF_2G_2T
+  2x10GE in slot #1
+X11SSWF_2G_4G
+  4xGE in slot #1
+X11SSWF_2G_2T_2T
+  2x10GE in slot #1
+  2x10GE in slot #2
+
+Select with NixOS option
+
+  services.snabb.devices.superMicro.<device>.enable = true
