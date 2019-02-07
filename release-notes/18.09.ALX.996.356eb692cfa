@@ -1,0 +1,66 @@
+Release Notes for 18.09.ALX.996.356eb692cfa
+
+This version provides support for IPv4/IPv6 dual-stack operation for
+L3 interfaces and pseudowires.
+
+For interfaces, the "afs" (address families) section is now allowed to
+contain a "ipv4" subsection, with identical semantics as the existing
+"ipv6" section, e.g.
+
+interfaces = [
+  {
+    name = "TenGigE1/1";
+    addressFamilies = {
+      ipv4 = {
+        address = "192.0.2.2";
+        nextHop = "192..0.2".1;
+      };
+    
+      ipv6 = {
+        address = "2001:db8::2";
+        nextHop = "2001:db8:0::1";
+      };
+    };
+  }
+]
+
+Pseudowires can use either IPv4 or IPv6 as transport, provided that
+the corresponding address family is enabled on the upink interface
+associated with the VPLS instance to which it belongs.
+
+A VPLS instance can contain pseudowires of mixed address families.  To
+accomodate this, the following changes of configuration options have
+been implemented, which are not compatible with earlier ALX releases.
+
+   * The "address" as well as the "vcID" properties have been removed
+     from VPLS instances.
+
+   * Each pseudowire now requires the configuration of both endpoint
+     addresses as well as a VC ID and an address family.
+
+For example:
+
+pseudowires = {
+  pw1 = {
+    addressFamily = "ipv6";
+    localAddress = "2001:db8:0:1::1";
+    remoteAddress = "2001:db8:0:1::1";
+    vcID = 1;
+  };
+}
+
+A pseudowire is uniquely identified by the tuple (source, destination,
+VC ID) and can be associated with any VPLS instance.
+
+This change also made it necessary to modify the implementation of the
+pseudowire control-channel, which now uses a VC ID of its own.  This
+VC ID is derived from the pseudowire's VC ID by adding the value
+0x8000.  As a consequence, regular VC IDs are restricted to the range
+0 - 0x7FFF.  This rule only applies to tunneling protocols that permit
+the signalling of VC IDs in their packet headers, e.g. GRE.
+
+The L2TPv3 using the "keyed-ipv6" method does not make use of the VC
+ID, since the IPv6 address itself already defines the local identity
+of the tunnel.  For these tunnels, the vcID MUST be set to 0.
+Internally, the header's session-id field is still used to distinguish
+the data channel from the control channel.
