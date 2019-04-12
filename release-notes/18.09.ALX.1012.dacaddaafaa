@@ -1,0 +1,45 @@
+Release Notes for 18.09.ALX.1010.33e48948003
+
+This release constitutes a major overhaul of the l2vpn program to
+accomodate new features.
+
+The configuration of the l2vpn Snabb program is now based on a YANG
+module.  While this is essentially hidden from the user through the
+NixOS layer, it changes the manner in which the application is
+executed and how it handles changes in the configuration.
+
+The application uses Snabb's "ptree" mechanism for the creation of
+separate "worker" and "leader" processes.  The leader starts the l2vpn
+application as a sub-process and then proceeds to listen for
+configuration changes.  Whenever it detects a change in configuration,
+it informs the worker process, which re-configures itself without the
+need of re-starting the entire worker process.
+
+The workflow of the user doesn't change, i.e. the new configuration is
+enabled via "nixos-rebuild".  There is a new systemd service called
+"snabb-ptree-master" which takes care of either launching the l2vpn
+application if it is not yet running or re-configuring a running
+instance.
+
+IPsec support now includes dynamic key-exchange through a modified
+version of the Strongswan IKE daemon, which is automatically
+provisioned by the Snabb NixOS module.  The l2vpn configuration has
+been re-factored to reflect a more natural grouping of VPLS peers and
+transport connections.
+
+The l2vpn configuration has two new items at the top level: peers and
+transports.  The former defines properties of the local system and all
+remote systems used by any of the l2vpn instances.  The properties
+include a name and a list of addresses available for terminating
+pseudowires as well as a list of parameters for IKE if IPsec is
+enabled.
+
+The transports section defines pairs of addresses with one local and
+one remote endpoint to be used by pseudowires.
+
+Finally, the "pseudowires" section of a VPLS configuration references
+exactly one transport and defines the type of tunneling protocol to be
+used with it to form the pseudowire.
+
+Configurations from previous releases need to be converted to this new
+format.
