@@ -201,7 +201,8 @@ let
       chmod --reference=${selfExtractor} $out/alx-upgrade
       rm $out/${releaseName}.tar $out/upgrade $out/payload.tar
       release_notes=${copyPathToStore ./release-notes}/${version}
-      [ -f $release_notes ] && cp $release_notes $out/release-notes.txt || true
+      [ -f $release_notes ] || { echo "Missing release notes $release_notes"; exit 1; }
+      cp $release_notes $out/release-notes.txt
     '';
 
   jobs = rec {
