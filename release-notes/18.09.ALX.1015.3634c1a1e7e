@@ -1,0 +1,37 @@
+Release Notes for 18.09.ALX.1015.3634c1a1e7e
+
+New features
+
+   * Complete fate-sharing of l2tpv3 data- and control-channels
+
+     The control-channel for a l2tpv3-based tunnel used to use
+     fixed cookie values of all zero bytes.  In case of a cookie
+     mismatch on the data-channel, this lead to the operational
+     status to be set to "up" even though the tunnel was not
+     working.  The control-channel now uses the same cookies as
+     the data-channel to reflect the mismatch in the operational
+     status.
+
+   * Enable option per VPLS instance
+
+     Each VPLS instance can now be selectively disabled with
+
+     vpls = {
+       foo = {
+         enable = false;
+       };
+
+     This is equivalent to removing the entire section from the
+     vpls configuration.
+
+   * Trigger worker process restart when a JIT option changes
+
+     Any changes in the "luajitWorker" attribute set a l2vpn
+     instance configuration will restart the corresponding worker
+     process to pick up the changes
+
+Bug fixes
+
+   * The previous release introduced a bug that causes the
+     interface counters of any sub-interface to show values
+     of zero
