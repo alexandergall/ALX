@@ -246,6 +246,8 @@ follows.
      exact version number of the release.  The version can be
      determined by executing `cat $(nix-build -A versionALX --quiet)`.
 
+   * Commit
+
    * Change to the `release` branch
 
    * Merge with `master`
@@ -1442,8 +1444,7 @@ configuration based on the local copy.
 
 ## <a name="nixos-options">Snabb NixOS Options</a>
 ```
-
-CONFIGURATION.NIX(5)										  NixOS Reference Pages										     CONFIGURATION.NIX(5)
+CONFIGURATION.NIX(5)										  NixOS Reference Pages										    CONFIGURATION.NIX(5)
 
 NAME
        configuration.nix __ - NixOS system configuration specification
@@ -1466,8 +1467,8 @@ OPTIONS
 	       <nixpkgs/nixos/modules/services/networking/snabb>
 
        services.snabb.devices
-	   List of supported devices by vendor and model. The model descriptions contain a list of physical interfaces which defines their names and driver configurations. Exactly one vendor/model can be designated to
-	   be the active device by setting its enable option to true. The high-level interface configurations in services.snabb.interfaces refer to these definitions by name.
+	   List of supported devices by vendor and model. The model descriptions contain a list of physical interfaces which defines their names and driver configurations. Exactly one vendor/model can be designated
+	   to be the active device by setting its enable option to true. The high-level interface configurations in services.snabb.interfaces refer to these definitions by name.
 
 	   Type: attribute set of attribute set of submoduless
 
@@ -1623,8 +1624,8 @@ OPTIONS
 	       <nixpkgs/nixos/modules/services/networking/snabb>
 
        services.snabb.interfaces
-	   A list of interface configurations. If the nicConfig option is not present, then name must refer to an interface defined in the vendor/model description referred to by the services.snabb.device option. That
-	   definition must have a nicConfig attribute which will be used for the low-level configuration of the interface.
+	   A list of interface configurations. If the nicConfig option is not present, then name must refer to an interface defined in the vendor/model description referred to by the services.snabb.device option.
+	   That definition must have a nicConfig attribute which will be used for the low-level configuration of the interface.
 
 	   Type: list of submodules
 
@@ -1831,11 +1832,11 @@ OPTIONS
 
        services.snabb.interfaces.*.mirror.type
 	   The type of the mirror mechanism to use. If set to tap, a Tap interface is created to receive the mirrored packets for each direction that is enabled. If the corresponding option (rx or tx) is a boolean,
-	   the name of the Tap device is constructed from the name of the interface by replacing slashes by hyphens, truncating the name to 13 characters and appending the string "_rx" or "_tx" (i.e. the name will not
-	   exceed the system limit of 16 character for interface names on Linux). If the rx or tx option is a string, it will be used as the name of the Tap device instead.
+	   the name of the Tap device is constructed from the name of the interface by replacing slashes by hyphens, truncating the name to 13 characters and appending the string "_rx" or "_tx" (i.e. the name will
+	   not exceed the system limit of 16 character for interface names on Linux). If the rx or tx option is a string, it will be used as the name of the Tap device instead.
 
-	   If the type is set to pcap, packets will be written to files in the pcap format. If the tx/rx option is a boolean, the file name is constructed from the name of the interface by replacing slashes by hyphens
-	   and appending the string "_tx.pcap" or "_tx.pcap". If the tx/rx option is a string, it is used as the file name instead.
+	   If the type is set to pcap, packets will be written to files in the pcap format. If the tx/rx option is a boolean, the file name is constructed from the name of the interface by replacing slashes by
+	   hyphens and appending the string "_tx.pcap" or "_tx.pcap". If the tx/rx option is a string, it is used as the file name instead.
 
 	   Type: one of "tap", "pcap"
 
@@ -1855,10 +1856,10 @@ OPTIONS
 	       <nixpkgs/nixos/modules/services/networking/snabb>
 
        services.snabb.interfaces.*.name
-	   The name of the interface. This can be an arbitrary string which uniquely identifies the interface in the list services.snabb.interfaces. If VLAN-based sub-interfaces are used, the name must not contain any
-	   dots. Otherwise, the operator is free to chose any suitable naming convention. It is important to note that it is this name which is used to identify the interface within network management protocols such
-	   as SNMP (where the name is stored in the ifDescr and ifName objects) and not the PCI address. A persistent mapping of interface names to integers is created from the lists services.snabb.interfaces and
-	   services.snabb.subInterfaces by assigning numbers to subsequent interfaces in the list, starting with 1. In the context of SNMP, these numbers are used as the ifIndex to identify each interface in the
+	   The name of the interface. This can be an arbitrary string which uniquely identifies the interface in the list services.snabb.interfaces. If VLAN-based sub-interfaces are used, the name must not contain
+	   any dots. Otherwise, the operator is free to chose any suitable naming convention. It is important to note that it is this name which is used to identify the interface within network management protocols
+	   such as SNMP (where the name is stored in the ifDescr and ifName objects) and not the PCI address. A persistent mapping of interface names to integers is created from the lists services.snabb.interfaces
+	   and services.snabb.subInterfaces by assigning numbers to subsequent interfaces in the list, starting with 1. In the context of SNMP, these numbers are used as the ifIndex to identify each interface in the
 	   relevant MIBs.
 
 	   Type: string
@@ -2099,8 +2100,8 @@ OPTIONS
 	       <nixpkgs/nixos/modules/services/networking/snabb>
 
        services.snabb.interfaces.*.trunk.vlans.*.mtu
-	   The MTU of the subinterface in bytes, including the full Ethernet header. In particular, if the interface is configured as VLAN trunk, the 4 bytes attributed to the VLAN tag must be included in the MTU. The
-	   MTU must not exceed that of the trunk on which it is based. By default, the MTU is inherited from the trunk.
+	   The MTU of the subinterface in bytes, including the full Ethernet header. In particular, if the interface is configured as VLAN trunk, the 4 bytes attributed to the VLAN tag must be included in the MTU.
+	   The MTU must not exceed that of the trunk on which it is based. By default, the MTU is inherited from the trunk.
 
 	   Type: null or signed integer
 
@@ -2243,6 +2244,16 @@ OPTIONS
 	   Type: attribute set of submodules
 
 	   Default: { }
+
+	   Declared by:
+	       <nixpkgs/nixos/modules/services/networking/snabb/programs/l2vpn>
+
+       services.snabb.programs.l2vpn.instances.<name>.vpls.<name>.enable
+	   Whether to enable this VPLS instance.
+
+	   Type: boolean
+
+	   Default: true
 
 	   Declared by:
 	       <nixpkgs/nixos/modules/services/networking/snabb/programs/l2vpn>
@@ -2920,7 +2931,6 @@ OPTIONS
 	   Declared by:
 	       <nixpkgs/nixos/modules/services/networking/snabb>
 
-
 AUTHOR
        Eelco Dolstra
 	   Author
@@ -2928,5 +2938,5 @@ AUTHOR
 COPYRIGHT
        Copyright © 2007-2018 Eelco Dolstra
 
-NixOS													01/01/1970										     CONFIGURATION.NIX(5)
+NixOS												       01/01/1970										    CONFIGURATION.NIX(5)
 ```
