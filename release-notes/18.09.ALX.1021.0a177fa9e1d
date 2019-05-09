@@ -1,0 +1,13 @@
+Release Notes for 18.09.ALX.1021.0a177fa9e1d
+
+This is a pure bugfix release.
+
+   * Properly support multiple tunnel protocols on the same
+     transport. In previous releases, mixing GRE and L2TPv3 on the
+     same transport would lead to an assertion failure.
+
+   * When an interface, which is part of the configuration, is not
+     referenced by a VPLS either as uplink or attachment circuit, it
+     is connected to traffic sinks to drop all incoming packets.  In
+     some cases, the sinks were not connected correctly, leading to an
+     assertion failure.
