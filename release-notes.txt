@@ -1,1 +1,1 @@
-release-notes/18.09.ALX.1021.0a177fa9e1d
+release-notes/18.09.ALX.1023.c8311b47c3d
