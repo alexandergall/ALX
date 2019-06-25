@@ -1,0 +1,65 @@
+Release Notes for 18.09.ALX.1034.9a799b45c04
+
+This release provides support for IPsec when one or both endpoints are
+behind a NAT.  In this situation, the peer of the NATted endpoint must
+supply both, the outside as well as the inside address in the peer
+configuration.  As an example, consider the case where enpoint A is
+behind a NAT with inside address 192.0.1.1 and outside address
+192.168.1.1 adnd endpoint B has the public address 192.168.2.2.  The
+local peer configuration on A specifies the local inside address and
+the remote public address
+
+peers = {
+  local = {
+    A = {
+      endpoints = {
+        ep = {
+	  addressFamily = "ipv4";
+	  address = "192.0.1.1";
+	};
+      };
+    };
+  };
+  remote = {
+    B = {
+      endpoints = {
+        ep = {
+	  addressFamily = "ipv4";
+	  address = "192.168.2.2";
+	};
+      };
+    };
+  };
+};
+
+B specifies the local public address and the remote inside and outside
+addresses
+
+peers = {
+  local = {
+    B = {
+      endpoints = {
+        ep = {
+	  addressFamily = "ipv4";
+	  address = "192.168.2.2";
+	};
+      };
+    };
+  };
+  remote = {
+    A = {
+      endpoints = {
+        ep = {
+	  addressFamily = "ipv4";
+	  address = "192.168.1.1";
+	  address-NAT-inside = "192.0.1.1";
+	};
+      };
+    };
+  };
+};
+
+During key-negotiation, the IKE daemons use the tuple (192.0.1.1,
+192.168.2.2) as "traffic selectors" on both endpoints.  A uses
+(192.0.1.1, 192.168.1.1) for source/destinations addresses of packets,
+while B uses (192.168.1.1, 192.168.2.2).
