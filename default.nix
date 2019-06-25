@@ -7,7 +7,7 @@
 
 { system ? "x86_64-linux" }:
 
-with import <nixpkgs> { inherit system; };
+with import ./nixpkgs { inherit system; };
 with lib;
 
 let
@@ -74,7 +74,7 @@ let
   };
   customConfig = ./install-image-config.nix;
 
-  build = (import <nixpkgs/nixos/lib/eval-config.nix> {
+  build = (import ./nixpkgs/nixos/lib/eval-config.nix {
     inherit system;
     modules = [ installer/modules/install-image.nix
                 installImageConfig
@@ -88,6 +88,16 @@ let
   versionALX = writeText "ALX-version"
     ''
       ${version}
+    '';
+
+  manpages = build.manual.manpages;
+  manpageASCII =
+    pkgs.runCommand "manpage-ascii"
+    {}
+    ''
+      mkdir $out
+      ${pkgs.man}/bin/man ${manpages}/share/man/man5/configuration.nix.5 \
+        | ${pkgs.utillinux}/bin/col -bx >$out/configuration.nix.5
     '';
 
   upgradeCommand = let
@@ -206,6 +216,7 @@ let
     '';
 
   jobs = rec {
+    inherit manpages manpageASCII;
     installImage = build.installImage.tarball;
     installConfig = build.installImage.config;
     inherit upgradeCommand versionALX;
