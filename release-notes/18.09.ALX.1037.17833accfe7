@@ -1,0 +1,15 @@
+Release Notes for 18.09.ALX.1037.17833accfe7
+
+New features
+
+   * Manager process exits if a worker process dies.  This allows
+     systemd to restart the application.
+
+   * Support vplsGenericMIB/cvplsGenericMIB. This provides a mapping
+     of pseudowires to VPLS instances.  Given the name of a VPLS
+     instance, a monitoring process can find all attached pseudowires
+     and check their status.
+
+Bug fixes
+
+   * Crash in corner-case of IPv4 reassembly
